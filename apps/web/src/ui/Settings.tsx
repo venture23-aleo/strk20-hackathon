@@ -70,19 +70,26 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
 
   return (
     <div>
-      <label className="field">
-        Mode
-        <select
-          value={mode}
-          onChange={(e) => {
-            setMode(e.target.value as "demo" | "direct");
-            setProbe(null);
-          }}
-        >
-          <option value="demo">demo — simulated pool in this browser</option>
-          <option value="direct">direct — real helper contract over RPC (testnet dev mode)</option>
-        </select>
-      </label>
+      <div className="mode-picker">
+        {(
+          [
+            ["demo", "Demo", "Simulated pool in this browser — nothing leaves your machine"],
+            ["direct", "Direct", "Real helper contract over RPC — testnet dev mode"],
+          ] as const
+        ).map(([value, title, desc]) => (
+          <button
+            key={value}
+            className={`mode-card ${mode === value ? "selected" : ""}`}
+            onClick={() => {
+              setMode(value);
+              setProbe(null);
+            }}
+          >
+            <strong>{title}</strong>
+            <span>{desc}</span>
+          </button>
+        ))}
+      </div>
       {mode === "direct" && (
         <>
           <div className="row" style={{ margin: "6px 0 10px" }}>
@@ -188,49 +195,51 @@ export function Settings({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <section>
-          <h3>Key backup</h3>
-          <p className="hint">
-            The backup holds your viewing key and contacts. Message history is not included —
-            it is rebuilt from the chain by sync, which is the point.
-          </p>
-          <div className="row">
-            <button className="primary" onClick={download}>
-              Download backup
-            </button>
-            <button
-              onClick={() => {
-                void navigator.clipboard.writeText(store.backupJson());
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              {copied ? "Copied ✓" : "Copy to clipboard"}
-            </button>
-          </div>
-          <p className="hint">
-            To restore: install the app anywhere, choose “Restore from backup” at onboarding,
-            paste this file.
-          </p>
-        </section>
+        <div className="settings-grid">
+          <section>
+            <h3>Key backup</h3>
+            <p className="hint">
+              The backup holds your viewing key and contacts. Message history is not included —
+              it is rebuilt from the chain by sync, which is the point.
+            </p>
+            <div className="row">
+              <button className="primary" onClick={download}>
+                Download backup
+              </button>
+              <button
+                onClick={() => {
+                  void navigator.clipboard.writeText(store.backupJson());
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                {copied ? "Copied ✓" : "Copy to clipboard"}
+              </button>
+            </div>
+            <p className="hint">
+              To restore: install the app anywhere, choose “Restore from backup” at onboarding,
+              paste this file.
+            </p>
+            {cfg.mode === "demo" && (
+              <label className="field">
+                Proving time (demo): {cfg.provingSeconds} s
+                <input
+                  type="range"
+                  min={3}
+                  max={29}
+                  value={cfg.provingSeconds}
+                  onChange={(e) => store.updateConnection({ provingSeconds: Number(e.target.value) })}
+                />
+                <span className="hint">Production proves in ~29 s. Lower this only for demos.</span>
+              </label>
+            )}
+          </section>
 
-        <section>
-          <h3>Connection</h3>
-          <ConnectionEditor onSaved={onClose} />
-          {cfg.mode === "demo" && (
-            <label className="field">
-              Proving time (demo): {cfg.provingSeconds} s
-              <input
-                type="range"
-                min={3}
-                max={29}
-                value={cfg.provingSeconds}
-                onChange={(e) => store.updateConnection({ provingSeconds: Number(e.target.value) })}
-              />
-              <span className="hint">Production proves in ~29 s. Lower this only for demos.</span>
-            </label>
-          )}
-        </section>
+          <section>
+            <h3>Connection</h3>
+            <ConnectionEditor onSaved={onClose} />
+          </section>
+        </div>
       </div>
     </div>
   );
