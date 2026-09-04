@@ -28,6 +28,7 @@ throughout and collected in [09-open-decisions.md](09-open-decisions.md).
 | [11-implementation.md](11-implementation.md) | Build order with the code the interfaces determine |
 | [12-client-and-ui.md](12-client-and-ui.md) | The two client architectures, and the outbox interface |
 | [13-milestones.md](13-milestones.md) | **Eight milestones with two shippable gates — start here to build** |
+| [14-m0-decision-record.md](14-m0-decision-record.md) | M0 spike results: D9/D12 resolved, derivations verified, SDK bundles for browser |
 
 ## The one-paragraph version
 

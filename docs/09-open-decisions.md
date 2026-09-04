@@ -53,7 +53,7 @@ fast follow, direct submission always available as a liveness fallback with an e
 
 ## D9 — Where does the payload live?
 
-<span>**Blocking · answerable by benchmark**</span>
+<span>**Resolved by M0 — helper storage; see [14-m0-decision-record.md](14-m0-decision-record.md)**</span>
 
 The design files ciphertext in the helper's WriteOnce storage, matching the pool's own
 convention and making discovery a storage read. The cost is real: **one slot per 31 bytes**,
@@ -107,7 +107,7 @@ does not.
 
 ## D12 — Does a zero-value invoke work?
 
-<span>**Blocking · one afternoon against source**</span>
+<span>**Resolved by M0 — yes, with a zero-amount `CreateEncNote` carrier; see [14-m0-decision-record.md](14-m0-decision-record.md)**</span>
 
 The whole pure-message path assumes a helper can be invoked with no token movement, returning
 an empty `Span<OpenNoteDeposit>`. STRK20's docs state an empty span is valid, and the escrow

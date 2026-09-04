@@ -1,0 +1,10 @@
+{
+  "name": "vite-spike",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "vite build" },
+  "dependencies": {
+    "@starkware-libs/starknet-privacy-sdk": "file:../starknet-privacy/sdk"
+  },
+  "devDependencies": { "vite": "^7.0.0" }
+}
