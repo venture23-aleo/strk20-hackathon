@@ -1,0 +1,1243 @@
+<title>Encrypted Messaging on STRK20</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --bg:#EEF1F1; --surface:#FAFBFB; --surface-2:#E4E9E9; --code-bg:#E7ECEB;
+  --border:#D3DBDA; --border-strong:#B2BFBD; --rule:#C6D0CF;
+  --text:#131F1E; --dim:#4A5957; --faint:#7A8886;
+  --accent:#0B6B67; --accent-soft:#DAEAE8; --accent-line:#8CBFBB;
+  --hidden:#0B6B67; --hidden-soft:#DAEAE8;
+  --visible:#8F5410; --visible-soft:#F4E4CB;
+  --danger:#8C2F2A; --danger-soft:#F3DCDA;
+  --shadow:0 1px 2px rgba(19,31,30,.06), 0 8px 24px -16px rgba(19,31,30,.35);
+  --sans:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1212; --surface:#111A1A; --surface-2:#172222; --code-bg:#0E1818;
+    --border:#253333; --border-strong:#384948; --rule:#1E2B2B;
+    --text:#DEE7E5; --dim:#9CADAA; --faint:#6C7E7B;
+    --accent:#4CC2B6; --accent-soft:#123230; --accent-line:#2A5D59;
+    --hidden:#4CC2B6; --hidden-soft:#123230;
+    --visible:#DBA55C; --visible-soft:#2E2412;
+    --danger:#E08A83; --danger-soft:#331917;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1212; --surface:#111A1A; --surface-2:#172222; --code-bg:#0E1818;
+  --border:#253333; --border-strong:#384948; --rule:#1E2B2B;
+  --text:#DEE7E5; --dim:#9CADAA; --faint:#6C7E7B;
+  --accent:#4CC2B6; --accent-soft:#123230; --accent-line:#2A5D59;
+  --hidden:#4CC2B6; --hidden-soft:#123230;
+  --visible:#DBA55C; --visible-soft:#2E2412;
+  --danger:#E08A83; --danger-soft:#331917;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent-soft);color:var(--text)}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-line)}
+a:hover{border-bottom-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+/* ---------- masthead ---------- */
+.masthead{border-bottom:1px solid var(--border);background:var(--surface)}
+.masthead-in{max-width:1240px;margin:0 auto;padding:44px 32px 34px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 18px}
+.masthead h1{font-family:var(--sans);font-weight:700;font-size:clamp(34px,5.2vw,54px);line-height:1.03;letter-spacing:-.026em;margin:0;text-wrap:balance;max-width:19ch}
+.deck{font-size:19px;line-height:1.5;color:var(--dim);max-width:62ch;margin:20px 0 0}
+.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;font-family:var(--mono);font-size:11.5px;letter-spacing:.05em}
+.meta span{border:1px solid var(--border-strong);color:var(--dim);padding:5px 11px;border-radius:2px}
+.meta span.live{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft)}
+
+/* ---------- shell ---------- */
+.shell{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:216px minmax(0,1fr);gap:56px;align-items:start}
+.rail{position:sticky;top:0;max-height:100vh;overflow-y:auto;padding:44px 0 44px;font-family:var(--sans)}
+.rail-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 14px}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.rail a{display:grid;grid-template-columns:26px 1fr;gap:9px;padding:6px 9px 6px 6px;font-size:13.5px;line-height:1.34;color:var(--dim);border:0;border-left:2px solid transparent;border-radius:0 3px 3px 0}
+.rail a .n{font-family:var(--mono);font-size:11px;color:var(--faint);padding-top:2px}
+.rail a:hover{background:var(--surface-2);color:var(--text)}
+.rail a.on{background:var(--accent-soft);color:var(--text);border-left-color:var(--accent);font-weight:600}
+.rail a.on .n{color:var(--accent)}
+
+.doc{padding:44px 0 120px;min-width:0}
+section{scroll-margin-top:24px;padding-bottom:8px}
+section+section{margin-top:60px;padding-top:52px;border-top:1px solid var(--rule)}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px}
+.sec-num{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--accent);padding-top:2px}
+h2{font-family:var(--sans);font-weight:700;font-size:clamp(26px,3.4vw,34px);letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
+h3{font-family:var(--sans);font-weight:600;font-size:19.5px;letter-spacing:-.011em;margin:38px 0 12px;text-wrap:balance}
+h4{font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:28px 0 10px}
+p{margin:0 0 15px;max-width:68ch}
+ul,ol.body{margin:0 0 16px;padding-left:19px;max-width:68ch}
+li{margin-bottom:7px}
+li::marker{color:var(--faint)}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:.855em;background:var(--code-bg);padding:1.5px 5px;border-radius:2px;border:1px solid var(--border)}
+a code{color:inherit}
+pre{font-family:var(--mono);font-size:12.7px;line-height:1.62;background:var(--code-bg);border:1px solid var(--border);border-left:2px solid var(--accent-line);border-radius:0 3px 3px 0;padding:16px 18px;overflow-x:auto;margin:0 0 18px}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+.lede{font-size:18.5px;line-height:1.55;color:var(--dim);max-width:64ch;margin-bottom:22px}
+
+/* ---------- callouts ---------- */
+.note{border:1px solid var(--border);border-left:3px solid var(--accent);background:var(--surface);border-radius:0 3px 3px 0;padding:15px 18px;margin:0 0 20px;max-width:68ch;box-shadow:var(--shadow)}
+.note.warn{border-left-color:var(--visible)}
+.note.stop{border-left-color:var(--danger)}
+.note p:last-child{margin-bottom:0}
+.note-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin:0 0 7px;font-weight:600}
+.note.warn .note-label{color:var(--visible)}
+.note.stop .note-label{color:var(--danger)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--border);border-radius:3px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:13.8px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:11px 15px;border-bottom:1px solid var(--border-strong);white-space:nowrap;background:var(--surface-2)}
+td{padding:11px 15px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.45;color:var(--dim)}
+td:first-child{color:var(--text);font-weight:500}
+tr:last-child td{border-bottom:0}
+table code{font-size:12px}
+
+/* ---------- pills ---------- */
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;padding:2.5px 8px;border-radius:2px;white-space:nowrap;font-weight:500}
+.pill.h{background:var(--hidden-soft);color:var(--hidden);border:1px solid var(--accent-line)}
+.pill.v{background:var(--visible-soft);color:var(--visible);border:1px solid var(--visible)}
+
+/* ---------- figures ---------- */
+figure{margin:0 0 22px;border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:22px 22px 15px;box-shadow:var(--shadow);overflow-x:auto}
+figure svg{display:block;width:100%;min-width:660px;height:auto;color:var(--text)}
+figcaption{margin-top:15px;padding-top:13px;border-top:1px solid var(--rule);font-family:var(--sans);font-size:12.5px;line-height:1.55;color:var(--dim);max-width:80ch}
+figcaption b{color:var(--text);font-weight:600}
+.d-zone{fill:none;stroke:var(--border-strong);stroke-dasharray:4 4;stroke-width:1}
+.d-lane{fill:var(--surface-2);stroke:none}
+.d-box{fill:var(--bg);stroke:var(--border-strong);stroke-width:1}
+.d-own{fill:var(--accent-soft);stroke:var(--accent-line);stroke-width:1}
+.d-leak{fill:var(--visible-soft);stroke:var(--visible);stroke-width:1}
+.d-t{fill:var(--text);font-family:var(--sans);font-size:12.5px;font-weight:600}
+.d-tm{fill:var(--text);font-family:var(--mono);font-size:12px;font-weight:600}
+.d-s{fill:var(--dim);font-family:var(--sans);font-size:10.5px}
+.d-xs{fill:var(--faint);font-family:var(--sans);font-size:9.5px}
+.d-e{fill:var(--dim);font-family:var(--mono);font-size:10px}
+.d-hot{fill:var(--accent);font-family:var(--mono);font-size:10px}
+.d-warn{fill:var(--visible);font-family:var(--mono);font-size:10.5px;font-weight:600}
+.d-lab{fill:var(--faint);font-family:var(--mono);font-size:9.5px;letter-spacing:.09em}
+.d-num{fill:var(--accent-soft);stroke:var(--accent-line);stroke-width:1}
+.d-numt{fill:var(--accent);font-family:var(--mono);font-size:10px;font-weight:600}
+.d-edge{stroke:var(--faint);stroke-width:1.5;fill:none}
+.d-hotedge{stroke:var(--accent);stroke-width:2;fill:none}
+.d-dash{stroke:var(--faint);stroke-width:1.5;fill:none;stroke-dasharray:5 4}
+.d-fill{fill:var(--faint)}
+.d-fillhot{fill:var(--accent)}
+
+/* ---------- decisions ---------- */
+.dec{border:1px solid var(--border);border-radius:3px;background:var(--surface);padding:20px 22px;margin:0 0 16px;box-shadow:var(--shadow)}
+.dec-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.dec-id{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.06em}
+.dec h3{margin:0;font-size:17.5px;flex:1 1 240px}
+.dec p{margin-bottom:11px}
+.dec p:last-child{margin-bottom:0}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px;font-weight:600}
+.tag.block{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger)}
+.tag.soft{background:var(--surface-2);color:var(--faint);border:1px solid var(--border-strong)}
+.rec{font-family:var(--sans);font-size:13.5px;background:var(--accent-soft);border-radius:2px;padding:9px 13px;color:var(--text);margin-top:12px}
+.rec b{color:var(--accent);font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;display:block;margin-bottom:3px}
+
+/* ---------- phases ---------- */
+.phase{display:grid;grid-template-columns:74px minmax(0,1fr);gap:20px;padding:18px 0;border-bottom:1px solid var(--rule)}
+.phase:last-of-type{border-bottom:0}
+.phase-n{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);padding-top:3px;line-height:1.4}
+.phase h3{margin:0 0 8px;font-size:17px}
+.phase ul{margin-bottom:0;font-size:15px}
+
+footer{border-top:1px solid var(--border);background:var(--surface);margin-top:0}
+.footer-in{max-width:1240px;margin:0 auto;padding:32px;font-family:var(--mono);font-size:11.5px;color:var(--faint);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr;gap:0;padding:0 22px}
+  .rail{position:static;max-height:none;padding:26px 0 0;border-bottom:1px solid var(--rule)}
+  .rail ol{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:2px;padding-bottom:22px}
+  .masthead-in{padding:34px 22px 28px}
+  .doc{padding-top:34px}
+  .footer-in{padding:26px 22px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <p class="eyebrow">Architecture &amp; implementation · v0.3 · STRK20</p>
+    <h1>Encrypted Messaging on STRK20</h1>
+    <p class="deck">A metadata-resistant messaging layer built as an anonymizer contract on Starknet's deployed privacy pool. Messages are filed under the same channel keys the pool uses for payment notes — so the tag scheme, the ECDH handshake, the proof system and the anonymity set are all inherited rather than rebuilt.</p>
+    <div class="meta">
+      <span class="live">Design phase — nothing implemented</span>
+      <span>1 contract · 1 SDK extension</span>
+      <span>7 decisions resolved</span>
+      <span>8 milestones · 2 gates</span>
+      <span>5 assumptions to verify</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Contents">
+    <p class="rail-title">Contents</p>
+    <ol>
+      <li><a href="#summary"><span class="n">00</span><span>Summary</span></a></li>
+      <li><a href="#overview"><span class="n">01</span><span>Overview</span></a></li>
+      <li><a href="#threat"><span class="n">02</span><span>Threat model</span></a></li>
+      <li><a href="#arch"><span class="n">03</span><span>Architecture</span></a></li>
+      <li><a href="#crypto"><span class="n">04</span><span>Cryptography</span></a></li>
+      <li><a href="#contracts"><span class="n">05</span><span>Contracts</span></a></li>
+      <li><a href="#sdk"><span class="n">06</span><span>SDK</span></a></li>
+      <li><a href="#discovery"><span class="n">07</span><span>Discovery</span></a></li>
+      <li><a href="#submission"><span class="n">08</span><span>Submission</span></a></li>
+      <li><a href="#decisions"><span class="n">09</span><span>Open decisions</span></a></li>
+      <li><a href="#stack"><span class="n">10</span><span>Tech stack</span></a></li>
+      <li><a href="#impl"><span class="n">11</span><span>Implementation</span></a></li>
+      <li><a href="#client"><span class="n">12</span><span>Client &amp; UI</span></a></li>
+      <li><a href="#milestones"><span class="n">13</span><span>Milestones</span></a></li>
+    </ol>
+  </nav>
+
+  <main class="doc">
+
+<section id="summary">
+  <div class="sec-head"><span class="sec-num">00</span><h2>Summary</h2></div>
+  <p class="lede">Two STRK20 participants already share a channel key, derived by ECDH on the STARK curve the first time either pays the other. We reuse it to address message slots exactly as the pool addresses note slots.</p>
+  <p>A message is sent by adding an <code>InvokeExternal</code> action to a pool transaction, which makes the pool call our <code>message_anonymizer</code> helper — so the helper's caller is the pool, not the author. A paymaster submits the transaction, so the public submitter is not the author either. The helper writes each encrypted payload to a WriteOnce slot at <code>msg_id = h(MSG_ID_TAG, channel_key, index)</code>. The recipient walks those derived slots over plain RPC and decrypts locally.</p>
+  <p><strong>There is no relayer to build, no membership circuit to write, no verifier to deploy, and no indexer required.</strong></p>
+  <div class="note">
+    <p class="note-label">What changed in this revision</p>
+    <p>The previous draft assumed a hypothetical pool and specified a membership circuit, a Garaga verifier, a bespoke relayer network, a tag-ratchet scheme and a discovery indexer. STRK20 supplies functional equivalents of all five, so those components are deleted. What remains is one Cairo contract and one SDK extension.</p>
+  </div>
+  <div class="note stop">
+    <p class="note-label">Read this before anything else</p>
+    <p>STRK20 escrows every user's private viewing key to an auditor on-chain at registration. Because messages are filed under keys derived from it, <strong>an auditor under lawful process can read message content</strong>, not merely payment history. This system is not suitable where the adversary can compel the auditor — see <a href="#threat">§02</a>.</p>
+  </div>
+</section>
+
+<section id="overview">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Overview</h2></div>
+  <p>A private messaging layer on <strong>STRK20</strong>, Starknet's deployed privacy pool. Two pool participants exchange encrypted messages such that an observer learns neither who sent a message, who received it, nor what it said.</p>
+  <p>The deliverable is deliberately small: an anonymizer contract implementing <code>privacy_invoke</code>, and an extension to the existing TypeScript Privacy SDK. That is the whole build. The rest of this section explains why it is that small.</p>
+
+  <h3>What STRK20 already provides</h3>
+  <p>The hard parts of secure messaging are deployed on Starknet Mainnet (<code>0x040337b1…e812a</code>) and Sepolia (<code>0x0254a6b2…e0d91</code>).</p>
+  <div class="tw"><table>
+    <thead><tr><th>Requirement</th><th>STRK20 already has it</th></tr></thead>
+    <tbody>
+      <tr><td>Key agreement</td><td><strong>ECDH on the STARK curve</strong>, fresh ephemeral key per channel</td></tr>
+      <tr><td>Key registration</td><td><code>SetViewingKey</code>; <code>K = k·G</code> registered on-chain, immutable</td></tr>
+      <tr><td>Shared secret per pair</td><td><code>channel_key = h(CHANNEL_KEY_TAG, sender_addr, sender_sk, recipient_addr, recipient_pk)</code></td></tr>
+      <tr><td>Unlinkable addressing</td><td><code>note_id = h(NOTE_ID_TAG, channel_key, token, index, 0)</code> — dense, sequential, WriteOnce</td></tr>
+      <tr><td>Discovery without an index</td><td>Walk dense indices to the first empty slot; cost scales with <em>your</em> activity, not pool volume</td></tr>
+      <tr><td>Sender anonymity at the callee</td><td><code>InvokeExternal</code> — the pool calls the helper, so the helper's caller is the pool</td></tr>
+      <tr><td>Submitter decoupling</td><td>A paymaster relays, so the submitting address is not the user's</td></tr>
+      <tr><td>Membership and authorization</td><td>STARK proof over a virtual Starknet execution, verified in-protocol</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <p class="note-label">Read that table as a list of things not to build</p>
+    <p>The tag-derivation scheme, the ECDH handshake, the anonymity set, the proof system and the discovery algorithm all exist. A messaging layer that invented its own versions would be strictly worse: <strong>a second anonymity set is a smaller anonymity set.</strong></p>
+  </div>
+
+  <h3>The gap this project fills</h3>
+  <p>STRK20 addresses and encrypts <em>notes</em> — an amount and a token. Three things are missing for messages.</p>
+  <h4>1 — A place to put a message body</h4>
+  <p>Notes carry a masked <code>u128</code>, not a kilobyte of text. Payloads need their own storage, filed under the same channel key so the same discovery scan finds them.</p>
+  <h4>2 — Authenticated encryption</h4>
+  <p>STRK20 hides note fields with domain-separated Poseidon hash-and-add masking — cheap, and correct for values whose integrity is already enforced by the pool's balance invariant. Message bodies have no such invariant behind them: masking alone is <strong>malleable</strong>, with no MAC. We add a real AEAD over the body.</p>
+  <h4>3 — A helper contract to receive them</h4>
+  <p><code>privacy_invoke</code> is the composability hook. Our helper accepts payloads as calldata, writes them to derived slots, and returns an empty <code>Span&lt;OpenNoteDeposit&gt;</code> when no value moves.</p>
+
+  <h3>What this buys, as product</h3>
+  <ul>
+    <li><strong>Encrypted mail between pool participants</strong> — addresses never appear on-chain.</li>
+    <li><strong>Payment memos</strong> — a message and a transfer as actions in one proven transaction. Not a multicall from one visible account: a single atomic pool transaction that inherits the transfer's anonymity rather than degrading it.</li>
+    <li><strong>Escrow and OTC negotiation</strong> — STRK20 already ships an escrow helper pattern; a messaging helper makes the negotiation leg private too.</li>
+    <li><strong>A substrate for metadata-resistant messaging</strong> — with one important limit, below.</li>
+  </ul>
+
+  <h3>The limit you must state out loud</h3>
+  <div class="note stop">
+    <p class="note-label">Not a flaw — a deliberate property of the pool</p>
+    <p>An auditor under lawful process recovers a user's viewing key <code>k</code>, derives their channel keys, and reads their history — <strong>including message content</strong>. Anonymous tips, dissident communication and whistleblowing are <strong>not supported use cases</strong>. Remove them from the pitch rather than qualifying them; a privacy product that overstates its threat model is worse than one with a narrower honest claim.</p>
+  </div>
+</section>
+
+<section id="threat">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Threat model</h2></div>
+
+  <h3>What is hidden, from whom</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Element</th><th>Chain observer</th><th>Paymaster</th><th>Auditor</th></tr></thead>
+    <tbody>
+      <tr><td>Sender identity</td><td><span class="pill h">hidden</span> pool is the caller</td><td><span class="pill h">hidden</span></td><td><span class="pill v">visible</span></td></tr>
+      <tr><td>Recipient identity</td><td><span class="pill h">hidden</span></td><td><span class="pill h">hidden</span></td><td><span class="pill v">visible</span></td></tr>
+      <tr><td>Message content</td><td><span class="pill h">hidden</span> AEAD</td><td><span class="pill h">hidden</span></td><td><span class="pill v">visible</span></td></tr>
+      <tr><td>Sender ↔ recipient link</td><td><span class="pill h">hidden</span> slot ids unlinkable</td><td><span class="pill h">hidden</span></td><td><span class="pill v">visible</span></td></tr>
+      <tr><td>That a pool transaction occurred</td><td><span class="pill v">visible</span></td><td><span class="pill v">visible</span></td><td><span class="pill v">visible</span></td></tr>
+      <tr><td>That the message helper was invoked</td><td><span class="pill v">visible</span></td><td><span class="pill v">visible</span></td><td><span class="pill v">visible</span></td></tr>
+      <tr><td>Payload size (bucketed)</td><td><span class="pill v">visible</span></td><td><span class="pill v">visible</span></td><td><span class="pill v">visible</span></td></tr>
+      <tr><td>Sender's IP</td><td><span class="pill h">hidden</span></td><td><span class="pill v">visible</span></td><td><span class="pill h">hidden</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The escrowed auditor key</h3>
+  <p>At registration, STRK20 encrypts the user's private viewing key <code>k</code> to an auditor's public key and stores that ciphertext on-chain. An auditor under lawful process recovers <code>k</code>, and from <code>k</code> derives every channel key that user participates in. Because this design files messages under those same channel keys, <strong>key recovery yields message plaintext, not just payment history.</strong></p>
+  <ul>
+    <li>The system resists chain observers, sequencers, paymasters and other pool users. It does <strong>not</strong> resist an adversary who can compel the auditor.</li>
+    <li>Use cases premised on resisting a state-level adversary are <strong>out of scope</strong> and should be removed from any pitch rather than qualified.</li>
+    <li>Supported use cases are those where compliance disclosure is acceptable or desirable: payment memos, OTC and escrow negotiation, professional confidentiality.</li>
+  </ul>
+  <p>An alternative exists — derive body keys from material <em>outside</em> the viewing-key hierarchy, so the auditor recovers metadata but not content. That trades away the single-key property and arguably works against the pool's compliance design. It is a real decision, not an obvious one: see <a href="#d10">D10</a>.</p>
+
+  <h3>Known leaks and mitigations</h3>
+  <p><strong>Helper invocation is visible.</strong> Every pool transaction reveals which anonymizer it invoked, so a transaction calling <code>message_anonymizer</code> publicly says "this was a message." <em>Mitigation:</em> limited — accept that "a message was sent" is public, as it already was.</p>
+  <p><strong>Payload size.</strong> Slot count fingerprints message length. <em>Mitigation:</em> pad to 256 B / 1 KiB / 4 KiB buckets in the SDK.</p>
+  <p><strong>Timing.</strong> <em>Mitigation:</em> batch multiple messages into one <code>InvokeExternal</code>, plus send jitter. Partial only.</p>
+  <p><strong>Channel-open linkability.</strong> STRK20 documents this: opening a channel and depositing or withdrawing in tight succession can link a recipient to public activity. Messaging inherits it — spread setup and traffic over time.</p>
+  <div class="note warn">
+    <p class="note-label">Dominant risk, inherited</p>
+    <p><strong>Anonymity set size</strong> is bounded by STRK20's participant count, not by anything here. Unfixable at this layer — but it is now a real deployed number rather than a hypothetical, which is a large improvement over the previous revision. <strong>Deposit screening</strong> also applies: shielding addresses are screened and each deposit signed, so entry to the set is permissioned.</p>
+  </div>
+
+  <h3>Non-goals for v1</h3>
+  <ul>
+    <li><strong>Resistance to auditor compulsion.</strong> The headline non-goal.</li>
+    <li><strong>Forward secrecy.</strong> Channel keys are long-lived by STRK20's design, derived from registered immutable viewing keys. A ratchet on top would break the property that discovery needs no extra state.</li>
+    <li><strong>Post-compromise security</strong>, <strong>delivery guarantees</strong>, <strong>read receipts</strong>.</li>
+    <li><strong>Resistance to a global passive network adversary.</strong> Needs mixnet transport.</li>
+    <li><strong>Protection against a malicious recipient.</strong> They can publish plaintext and their key.</li>
+  </ul>
+</section>
+
+<section id="arch">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Architecture</h2></div>
+  <p class="lede">Two components are ours: the helper contract and the SDK extension. Everything else is deployed, operated by others, or plain infrastructure.</p>
+
+  <figure>
+    <svg viewBox="0 0 1000 380" role="img" aria-label="Component map: the client SDK calls a remote proving service, submits the proven transaction through a paymaster to the STRK20 pool, which calls the message anonymizer helper; the recipient reads derived storage slots back over RPC.">
+      <defs>
+        <marker id="a1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="d-fill"/></marker>
+        <marker id="a1s" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M8,0 L0,4 L8,8 z" class="d-fill"/></marker>
+        <marker id="a1h" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="d-fillhot"/></marker>
+      </defs>
+      <text x="110" y="44" class="d-lab" text-anchor="middle">CLIENT DEVICE</text>
+      <text x="450" y="44" class="d-lab" text-anchor="middle">OFF-CHAIN SERVICES</text>
+      <text x="842" y="44" class="d-lab" text-anchor="middle">STARKNET · PUBLIC</text>
+      <rect x="8" y="58" width="204" height="286" rx="4" class="d-zone"/>
+      <rect x="330" y="58" width="240" height="286" rx="4" class="d-zone"/>
+      <rect x="700" y="58" width="284" height="286" rx="4" class="d-zone"/>
+
+      <rect x="24" y="96" width="160" height="64" rx="3" class="d-own"/>
+      <text x="104" y="118" class="d-t" text-anchor="middle">Privacy SDK</text>
+      <text x="104" y="135" class="d-s" text-anchor="middle">+ messaging extension</text>
+      <text x="104" y="151" class="d-s" text-anchor="middle">keys · AEAD · packing</text>
+      <text x="104" y="336" class="d-xs" text-anchor="middle">viewing key never leaves</text>
+
+      <rect x="346" y="96" width="208" height="60" rx="3" class="d-box"/>
+      <text x="450" y="120" class="d-t" text-anchor="middle">Paymaster</text>
+      <text x="450" y="138" class="d-s" text-anchor="middle">submits from its own address</text>
+
+      <rect x="346" y="186" width="208" height="54" rx="3" class="d-box"/>
+      <text x="450" y="208" class="d-t" text-anchor="middle">Proving service</text>
+      <text x="450" y="226" class="d-s" text-anchor="middle">remote · sees the witness</text>
+
+      <rect x="346" y="272" width="208" height="56" rx="3" class="d-box"/>
+      <text x="450" y="294" class="d-t" text-anchor="middle">Indexer + RPC</text>
+      <text x="450" y="312" class="d-s" text-anchor="middle">channels · slot reads</text>
+
+      <rect x="716" y="96" width="224" height="60" rx="3" class="d-box"/>
+      <text x="828" y="120" class="d-t" text-anchor="middle">STRK20 privacy pool</text>
+      <text x="828" y="138" class="d-s" text-anchor="middle">deployed · unmodified</text>
+
+      <rect x="716" y="196" width="224" height="64" rx="3" class="d-own"/>
+      <text x="828" y="220" class="d-tm" text-anchor="middle">message_anonymizer</text>
+      <text x="828" y="238" class="d-s" text-anchor="middle">privacy_invoke · WriteOnce slots</text>
+
+      <path d="M150,160 V213 H340" class="d-edge" marker-end="url(#a1)" marker-start="url(#a1s)"/>
+      <text x="247" y="206" class="d-e" text-anchor="middle">signed invocation ⇄ proof</text>
+
+      <path d="M184,126 H340" class="d-edge" marker-end="url(#a1)"/>
+      <text x="262" y="116" class="d-e" text-anchor="middle">proven tx</text>
+      <text x="262" y="145" class="d-xs" text-anchor="middle">~29 s later</text>
+
+      <path d="M554,126 H706" class="d-hotedge" marker-end="url(#a1h)"/>
+      <text x="630" y="116" class="d-hot" text-anchor="middle">invoke tx</text>
+      <text x="630" y="145" class="d-hot" text-anchor="middle">submitter ≠ author</text>
+
+      <path d="M828,156 V192" class="d-hotedge" marker-end="url(#a1h)"/>
+      <text x="838" y="172" class="d-hot">InvokeExternal</text>
+      <text x="838" y="187" class="d-hot">caller = pool</text>
+
+      <path d="M716,228 H604 V300 H560" class="d-dash" marker-end="url(#a1)"/>
+      <text x="658" y="222" class="d-e" text-anchor="middle">message slots</text>
+
+      <path d="M346,300 H70 V166" class="d-dash" marker-end="url(#a1)"/>
+      <text x="212" y="292" class="d-e" text-anchor="middle">getStorageAt · channels</text>
+
+      <rect x="24" y="358" width="10" height="10" rx="2" class="d-own"/>
+      <text x="40" y="367" class="d-xs">built by this project</text>
+      <rect x="190" y="358" width="10" height="10" rx="2" class="d-box"/>
+      <text x="206" y="367" class="d-xs">deployed, inherited or operated by others</text>
+      <path d="M500,363 H528" class="d-hotedge"/>
+      <text x="536" y="367" class="d-xs">where sender anonymity comes from</text>
+    </svg>
+    <figcaption><b>Anonymity has two sources, both inherited.</b> The paymaster hop hides the submitter from the chain; the <code>InvokeExternal</code> hop means the helper's caller is the pool for every user, so the helper cannot distinguish its callers even in principle. Note that <strong>proving and discovery are remote services</strong>, not client-side code — the proving service receives your signed invocation, which makes it the most sensitive dependency in the stack.</figcaption>
+  </figure>
+
+  <h3>End-to-end flow</h3>
+  <figure>
+    <svg viewBox="0 0 1040 510" role="img" aria-label="Swimlane sequence across sender client, paymaster, STRK20 pool, message anonymizer and recipient client, with a band showing that the only publicly visible moment is the submitted pool transaction.">
+      <defs>
+        <marker id="a2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="d-fill"/></marker>
+        <marker id="a2s" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M8,0 L0,4 L8,8 z" class="d-fill"/></marker>
+        <marker id="a2h" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="d-fillhot"/></marker>
+      </defs>
+      <text x="1020" y="44" class="d-lab" text-anchor="end">TIME →</text>
+      <rect x="126" y="64" width="894" height="54" class="d-lane"/>
+      <rect x="126" y="140" width="894" height="54" class="d-lane"/>
+      <rect x="126" y="216" width="894" height="54" class="d-lane"/>
+      <rect x="126" y="292" width="894" height="54" class="d-lane"/>
+      <rect x="126" y="368" width="894" height="54" class="d-lane"/>
+      <text x="112" y="95" class="d-lab" text-anchor="end">SENDER CLIENT</text>
+      <text x="112" y="171" class="d-lab" text-anchor="end">PAYMASTER</text>
+      <text x="112" y="247" class="d-lab" text-anchor="end">STRK20 POOL</text>
+      <text x="112" y="323" class="d-lab" text-anchor="end">HELPER CONTRACT</text>
+      <text x="112" y="399" class="d-lab" text-anchor="end">RECIPIENT CLIENT</text>
+
+      <rect x="136" y="71" width="230" height="40" rx="3" class="d-own"/>
+      <circle cx="156" cy="91" r="9" class="d-num"/><text x="156" y="95" class="d-numt" text-anchor="middle">1</text>
+      <text x="174" y="88" class="d-t">encrypt · build actions · prove</text>
+      <text x="174" y="103" class="d-xs">AEAD · pack · remote prove, ~29 s</text>
+
+      <rect x="414" y="147" width="170" height="40" rx="3" class="d-box"/>
+      <circle cx="434" cy="167" r="9" class="d-num"/><text x="434" y="171" class="d-numt" text-anchor="middle">2</text>
+      <text x="452" y="164" class="d-t">submit</text>
+      <text x="452" y="179" class="d-xs">public submitter = paymaster</text>
+
+      <rect x="632" y="223" width="190" height="40" rx="3" class="d-box"/>
+      <circle cx="652" cy="243" r="9" class="d-num"/><text x="652" y="247" class="d-numt" text-anchor="middle">3</text>
+      <text x="670" y="240" class="d-t">verify proof · phase 7</text>
+      <text x="670" y="255" class="d-xs">InvokeExternal, at most one</text>
+
+      <rect x="790" y="299" width="200" height="40" rx="3" class="d-own"/>
+      <circle cx="810" cy="319" r="9" class="d-num"/><text x="810" y="323" class="d-numt" text-anchor="middle">4</text>
+      <text x="828" y="316" class="d-t">write WriteOnce slots</text>
+      <text x="828" y="331" class="d-xs">msg_id = h(TAG, channel_key, i)</text>
+
+      <rect x="790" y="375" width="200" height="40" rx="3" class="d-own"/>
+      <circle cx="810" cy="395" r="9" class="d-num"/><text x="810" y="399" class="d-numt" text-anchor="middle">5</text>
+      <text x="828" y="392" class="d-t">walk slots · decrypt</text>
+      <text x="828" y="407" class="d-xs">plain RPC · no indexer</text>
+
+      <path d="M251,111 V129 H499 V138" class="d-edge" marker-end="url(#a2)"/>
+      <text x="375" y="123" class="d-e" text-anchor="middle">actions + STARK proof</text>
+      <path d="M499,187 V205 H727 V214" class="d-hotedge" marker-end="url(#a2h)"/>
+      <text x="613" y="199" class="d-hot" text-anchor="middle">submitter ≠ author</text>
+      <path d="M727,263 V281 H890 V290" class="d-hotedge" marker-end="url(#a2h)"/>
+      <text x="808" y="275" class="d-hot" text-anchor="middle">caller = pool</text>
+      <path d="M890,341 V373" class="d-edge" marker-end="url(#a2)" marker-start="url(#a2s)"/>
+      <text x="880" y="361" class="d-e" text-anchor="end">starknet_getStorageAt</text>
+
+      <text x="112" y="461" class="d-lab" text-anchor="end">PUBLIC VIEW</text>
+      <text x="112" y="475" class="d-xs" text-anchor="end">what any observer sees</text>
+      <rect x="136" y="444" width="440" height="40" rx="3" class="d-box"/>
+      <text x="356" y="461" class="d-s" text-anchor="middle">nothing on-chain</text>
+      <text x="356" y="475" class="d-xs" text-anchor="middle">step 1 happens entirely on the device</text>
+      <rect x="600" y="444" width="250" height="40" rx="3" class="d-leak"/>
+      <text x="725" y="460" class="d-warn" text-anchor="middle">THE PUBLIC MOMENT</text>
+      <text x="725" y="475" class="d-xs" text-anchor="middle">pool + helper addresses · size · timestamp</text>
+      <rect x="874" y="444" width="146" height="40" rx="3" class="d-box"/>
+      <text x="947" y="461" class="d-s" text-anchor="middle">nothing on-chain</text>
+      <text x="947" y="475" class="d-xs" text-anchor="middle">reads are RPC</text>
+    </svg>
+    <figcaption><b>One transaction is the entire public surface.</b> The ochre cell is the complete list of what an observer gets. Note what is <em>not</em> in it: no author address, no recipient, no content, and no link to any earlier message. Note also what <em>is</em>: invoking this specific helper publicly signals that the transaction carried a message rather than a plain transfer.</figcaption>
+  </figure>
+
+  <h3>Payment memo</h3>
+  <p>Not a multicall. A memo is an <code>InvokeExternal</code> action sitting in the same action batch as the transfer's <code>UseNote</code> and <code>CreateEncNote</code> actions, inside one proven pool transaction. Atomic by construction, and it inherits the transfer's anonymity rather than degrading it — a strict improvement over the multicall approach the previous revision described.</p>
+  <div class="note warn">
+    <p class="note-label">The constraint that shapes the client</p>
+    <p><strong>At most one <code>InvokeExternal</code> per transaction.</strong> A memo and a swap cannot share a transaction. Batch multiple <em>messages</em> into that single invoke instead — the helper's calldata is ours to design.</p>
+  </div>
+
+  <h3>Design principles</h3>
+  <p><strong>Inherit, don't reimplement.</strong> Every primitive STRK20 supplies is one we do not build, and one whose anonymity set we join rather than fragment.</p>
+  <p><strong>The helper holds no keys and makes no decisions.</strong> It asserts its caller, writes bytes to derived slots, and returns. All cryptography is off-chain and reviewable in TypeScript rather than Cairo.</p>
+  <p><strong>Discovery must work with nothing but an RPC URL.</strong> Any service we add must be an optimisation the user can decline.</p>
+  <p><strong>Failures degrade to latency, never to disclosure.</strong> If the paymaster is down the user may submit directly — losing submitter anonymity, keeping content confidentiality and the pool's own sender anonymity.</p>
+</section>
+
+<section id="crypto">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Cryptography</h2></div>
+  <p class="lede">Almost all of this is inherited. The section is short by design: the parts we add are the parts worth auditing.</p>
+  <p>Notation: <code>h</code> is Poseidon over the STARK field, <code>G</code> the STARK-curve generator, <code>·</code> scalar multiplication.</p>
+
+  <h3>1 · Inherited from STRK20 — do not reimplement</h3>
+  <p><strong>Identity.</strong> Every participant registers a viewing keypair once via <code>SetViewingKey</code>: <code>K = k·G</code>, immutable thereafter.</p>
+  <p><strong>Channel establishment.</strong> ECDH with a fresh ephemeral key per channel:</p>
+  <pre><code>sender picks random r,  publishes rG
+shared          = r·K                    // recipient computes k·(rG) = r·K
+enc_channel_key = h(ENC_CHANNEL_KEY_TAG, shared.x) + channel_key
+
+channel_key = h(CHANNEL_KEY_TAG, sender_addr, sender_sk, recipient_addr, recipient_pk)</code></pre>
+  <p>Channels are <strong>directional</strong>. Alice↔Bob is two channels, so a thread uses two lanes and the client stitches them into one conversation view.</p>
+  <p><strong>Slot addressing.</strong> The pool derives note locations from the channel key:</p>
+  <pre><code>note_id = h(NOTE_ID_TAG, channel_key, token, index, 0)</code></pre>
+  <div class="note">
+    <p class="note-label">Already in production</p>
+    <p>Dense sequential indices, WriteOnce cells, addresses indistinguishable from random storage without the channel key. <strong>This is a tag ratchet already deployed</strong> — the previous revision specified one from scratch, and that work is deleted.</p>
+  </div>
+
+  <h3>2 · What we add — message slots</h3>
+  <pre><code>msg_id  = h(MSG_ID_TAG,  channel_key, index)
+key_i   = h(MSG_KEY_TAG, channel_key, index)</code></pre>
+  <p>Domain tags must be distinct from every tag the pool uses, so a message slot can never collide with or be mistaken for a note slot. Dense and sequential, matching the pool's convention, so the same walk-until-empty scan works.</p>
+
+  <h3>3 · What we add — authenticated encryption</h3>
+  <p>STRK20 masks note fields with domain-separated hash-and-add: <code>enc_amount = h(TAG, channel_key, …, salt) + amount</code>. That is correct for a <code>u128</code> whose integrity is separately guaranteed by the pool's balance invariant — a tampered amount breaks the "balances end at zero" check.</p>
+  <div class="note stop">
+    <p class="note-label">Why we do not extend their masking to bodies</p>
+    <p>A message body has no such invariant behind it. Hash-and-add is <strong>malleable</strong>: flipping bits in the ciphertext flips bits in the plaintext, with no MAC to detect it.</p>
+  </div>
+  <pre><code>AEAD:   ChaCha20-Poly1305
+key:    key_i          (unique per message ⇒ nonce may be a constant zero)
+AAD:    msg_id         (ciphertext cannot be replayed into another slot)
+
+| version : 1 B | sender_addr : 32 B | timestamp : 8 B | len : 4 B | body | padding |</code></pre>
+  <p>The sender address inside the ciphertext authenticates the sender to the recipient. It is MACed under a <em>shared</em> secret rather than signed, so the recipient cannot prove authorship to a third party — though this is weaker than it sounds given the auditor can recover both sides' keys.</p>
+  <p><strong>Padding buckets:</strong> 256 B, 1 KiB, 4 KiB. Larger payloads should be chunked or held off-chain with only a locator and key in the body — see <a href="#d9">D9</a> for why the ceiling is low.</p>
+
+  <h3>4 · Field packing</h3>
+  <pre><code>felts = [ ceil(len/31), chunk_0, chunk_1, ... ]     // little-endian per chunk</code></pre>
+  <p>A 1 KiB bucket is 34 felts — and therefore 34 WriteOnce storage slots, which is the cost driver that keeps buckets small.</p>
+
+  <h3>5 · What we deliberately do not build</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Previously specified</th><th>Why it is gone</th></tr></thead>
+    <tbody>
+      <tr><td>Membership circuit</td><td>The pool's STARK proof already proves membership and authorization</td></tr>
+      <tr><td>Garaga verifier contract</td><td>Starknet verifies STRK20 proofs in-protocol</td></tr>
+      <tr><td>RLN nullifiers for spam control</td><td>Posting requires a valid pool transaction; gas plus proving cost is the rate limit</td></tr>
+      <tr><td>Bespoke tag ratchet</td><td><code>note_id</code> / <code>msg_id</code> derivation is the same construction, already deployed</td></tr>
+      <tr><td>Fuzzy Message Detection</td><td>Discovery cost scales with your own channels, not global volume</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>6 · Test vectors</h3>
+  <p>Derivations must match the Privacy SDK's exactly, or discovery silently returns nothing. Freeze byte-for-byte vectors for <code>channel_key</code>, <code>msg_id</code>, <code>key_i</code> and the felt packing, shared between the Cairo and TypeScript tests, before writing either.</p>
+</section>
+
+<section id="contracts">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Contracts</h2></div>
+  <p class="lede">One contract. No verifier to deploy, no pool modifications, no upgrade proxy.</p>
+
+  <h3>The privacy_invoke contract</h3>
+  <pre><code>use privacy::objects::OpenNoteDeposit;
+
+#[starknet::interface]
+pub trait IMessageAnonymizer&lt;T&gt; {
+    /// Called by the privacy pool during InvokeExternal (phase 7, at most once per tx).
+    fn privacy_invoke(
+        ref self: T,
+        messages: Span&lt;EncryptedMessage&gt;,
+        deposits: Span&lt;OpenNoteDeposit&gt;,
+    ) -&gt; Span&lt;OpenNoteDeposit&gt;;
+}
+
+#[derive(Drop, Serde)]
+struct EncryptedMessage {
+    msg_id: felt252,             // h(MSG_ID_TAG, channel_key, index)
+    ciphertext: Array&lt;felt252&gt;,  // AEAD output, 31 bytes per felt
+}</code></pre>
+  <p>Rules the pattern imposes:</p>
+  <ul>
+    <li><strong>Return exactly a <code>Span&lt;OpenNoteDeposit&gt;</code></strong> — trailing garbage makes the pool reject the call.</li>
+    <li><strong>An empty span is valid</strong> and means "credit nothing" — the pure-message case. The escrow helper's parked-funds step relies on this, so the pattern is established, though it needs confirming against source (<a href="#d12">D12</a>).</li>
+    <li><strong>Approve, don't transfer</strong> — irrelevant when no value moves; relevant if a memo rides a transfer, where we pass the deposits through.</li>
+    <li><strong>One invoke per transaction</strong> — a message batch and a swap cannot share a transaction.</li>
+  </ul>
+
+  <h3>Implementation sketch</h3>
+  <pre><code>#[abi(embed_v0)]
+impl MessageAnonymizerImpl of IMessageAnonymizer&lt;ContractState&gt; {
+    fn privacy_invoke(
+        ref self: ContractState,
+        messages: Span&lt;EncryptedMessage&gt;,
+        deposits: Span&lt;OpenNoteDeposit&gt;,
+    ) -&gt; Span&lt;OpenNoteDeposit&gt; {
+        assert(get_caller_address() == self.pool.read(), errors::CALLER_NOT_POOL);
+        for m in messages {
+            assert(self.slots.entry(*m.msg_id).read().is_zero(), errors::SLOT_OCCUPIED);
+            self.write_payload(*m.msg_id, m.ciphertext);
+        }
+        deposits   // pass through; empty for a pure message
+    }
+}</code></pre>
+  <p><strong><code>caller == pool</code></strong> is the only access control needed. Nobody can drive the helper directly, which is both a security property and the source of sender anonymity at this layer — from the helper's perspective the caller is always the pool.</p>
+  <p><strong>WriteOnce slots</strong> match the pool's own convention. A second write to an occupied <code>msg_id</code> reverts rather than overwriting, which is what makes the dense-index scan sound: an empty slot genuinely means "end of the list."</p>
+  <p><strong>No key material, no cryptography.</strong> The helper stores opaque felts. Every cryptographic decision lives in the SDK.</p>
+
+  <h3>Deliberate non-features</h3>
+  <p>No deletion or edit — storage is WriteOnce and pretending otherwise misleads users. No admin key, no pause, no upgrade proxy: an upgradeable message helper is one whose operator could begin recording metadata, and the trust story is worth more than the ability to patch. Version by deploying a new helper and pointing the SDK at it.</p>
+
+  <h3>Pool integration</h3>
+  <p><strong>No pool modifications.</strong> This is now a checked claim rather than an aspiration: <code>privacy_invoke</code> is the documented composability hook, and the pool is deployed and immutable.</p>
+  <p>The previous revision's blocking question about historical Merkle roots does not apply — STRK20 does not have us prove against a root. Its analogue is <strong>anchor-block recency</strong>: a proof is rejected if its anchor is older than <code>proof_validity_blocks</code>. With ~29 s of proving, that window must comfortably exceed proving plus submission time (<a href="#d2">D2′</a>).</p>
+
+  <h3>Cost sketch</h3>
+  <p>The dominant on-chain cost is <strong>storage</strong>: one WriteOnce slot per 31 bytes of payload, billed as L1 data gas. A 1 KiB message is ~34 slots.</p>
+  <p>This is a large per-message cost and the strongest argument for keeping padding buckets small, and for <a href="#d9">D9</a>, which asks whether bodies belong in storage at all. Benchmark a 256 B and a 4 KiB message on Sepolia before committing — a cheap experiment that constrains the product.</p>
+</section>
+
+<section id="sdk">
+  <div class="sec-head"><span class="sec-num">06</span><h2>SDK</h2></div>
+  <p class="lede">An extension to the existing Privacy SDK (TypeScript, Apache 2.0), not a new client. It reuses that SDK's viewing-key management, channel derivation, action building, proving backend and submission path.</p>
+
+  <pre><code>class Messaging {
+  constructor(sdk: PrivacyClient, helper: string);   // helper = anonymizer address
+
+  /** Queue a message; returns actions to add to a pool transaction. */
+  buildSend(to: Address, body: Uint8Array, opts?: SendOptions): Promise&lt;Action[]&gt;;
+
+  /** Build, prove and submit a message-only transaction. */
+  send(to: Address, body: Uint8Array, opts?: SendOptions): Promise&lt;TxReceipt&gt;;
+
+  /** Walk derived slots for every known channel and decrypt. */
+  discover(opts?: DiscoverOptions): Promise&lt;DecryptedMessage[]&gt;;
+}
+
+interface SendOptions {
+  padTo?: 256 | 1024 | 4096;         // default: smallest bucket that fits
+  batch?: Uint8Array[];              // extra messages for the same InvokeExternal
+  submit?: 'paymaster' | 'direct';   // 'direct' exposes the submitter address
+}</code></pre>
+  <p><code>buildSend</code> returning <em>actions</em> rather than submitting is the important part of the design. It lets a caller compose a memo into a transfer's action batch — one proven transaction, atomic, with no anonymity penalty — which is exactly what the payment-memo product needs.</p>
+
+  <h3>Batching is not optional</h3>
+  <div class="note warn">
+    <p class="note-label">This inverts how a chat client is normally built</p>
+    <p>One <code>InvokeExternal</code> per transaction, ~29 s per proof. Three messages as three transactions cost ~87 s and three fees; as one invoke carrying three payloads, ~29 s and one fee. The SDK should make <strong>batching the default</strong> and single-message send the special case — a local outbox that accumulates and flushes, not a send-on-enter loop.</p>
+  </div>
+
+  <h3>discover</h3>
+  <pre><code>for each known channel (from the Privacy SDK's channel scan):
+    for index = 0, 1, 2, ...:
+        slot = h(MSG_ID_TAG, channel_key, index)
+        read via starknet_getStorageAt; stop at the first empty slot
+    decrypt each payload with key_i, verify the Poly1305 tag</code></pre>
+  <p>Channel discovery itself is inherited — the Privacy SDK already trial-decrypts channel records to find new counterparties. We add only the per-channel message walk. Cost is proportional to <strong>your own</strong> channels and messages, so there is no global scan and no need for the Fuzzy Message Detection escape hatch the previous revision reserved room for.</p>
+  <p>Two practical notes: batch or multicall the reads where the RPC allows, since a naive implementation issues one round trip per index; and cache the last-known index per channel, resuming the walk from there.</p>
+
+  <h3>State</h3>
+  <p>Client state is <code>{ channel → lastSeenIndex }</code> and nothing else. Losing it costs a re-walk from index 0, which is cheap and needs only the viewing key — a materially better position than the previous revision, where state loss meant re-scanning the chain.</p>
+
+  <h3>Implementation notes</h3>
+  <ul>
+    <li>Reuse the Privacy SDK's Poseidon and STARK-curve code. A second implementation of either invites domain-separation divergence, which is the most likely integration bug in the system and fails silently.</li>
+    <li><code>@noble/ciphers</code> for ChaCha20-Poly1305.</li>
+    <li>Never log key material, including in error paths. Wrap secrets in a type whose <code>toString</code> and <code>toJSON</code> return <code>[redacted]</code>.</li>
+    <li>Constant-time comparison for MAC checks.</li>
+    <li><strong>The proving backend is configurable, and a hosted prover sees the witness.</strong> Teams handling sensitive traffic should self-host — surface this as a first-class configuration choice, not a footnote.</li>
+  </ul>
+</section>
+
+<section id="discovery">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Discovery</h2></div>
+  <p>Discovery has two halves, and they currently have different answers.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Half</th><th>Needs an indexer?</th></tr></thead>
+    <tbody>
+      <tr><td>Message payloads — walking our helper's slots</td><td><strong>No.</strong> Plain <code>starknet_getStorageAt</code>; we control this read path entirely.</td></tr>
+      <tr><td>Channel discovery — finding who opened a channel to you</td><td><strong>Yes, today.</strong> See below.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn">
+    <p class="note-label">Correction to the previous revision</p>
+    <p>We build no indexer — that part stands. But the claim that <em>none is required</em> was wrong. The SDK ships <code>ContractDiscoveryProvider</code>, which reads the pool over RPC with no indexer, but it is <strong>not exported</strong> from the published package: the <code>exports</code> map blocks deep paths, so importing it fails outright. Until that lands, <code>discoverChannels(...)</code> needs a discovery service.</p>
+  </div>
+  <p><strong>Mitigate what you can now.</strong> Construct the provider directly with OHTTP envelope encryption, which hides the client's IP from the discovery service. This should be our extension's default, not an option:</p>
+  <pre><code>new IndexerDiscoveryProvider(url, poolAddress, { ohttp: true })</code></pre>
+
+  <h3>The scan</h3>
+  <pre><code>channels ← Privacy SDK channel scan          // inherited, unchanged
+for each channel:
+    index ← cached lastSeenIndex (default 0)
+    loop:
+        slot  = h(MSG_ID_TAG, channel_key, index)
+        value = starknet_getStorageAt(helper, slot)
+        if value is empty: break
+        decrypt, verify tag, index++</code></pre>
+  <p><strong>Density.</strong> Indices are sequential with no gaps, so the first empty slot is a sound termination condition. This is why the helper must reject writes to an occupied slot rather than skipping — a gap would silently truncate every future scan.</p>
+  <p><strong>Derivation.</strong> Slot addresses come from the channel key, so without it they are indistinguishable from random storage. An observer watching the helper sees writes to scattered slots with no structure.</p>
+  <p><strong>Locality.</strong> Cost is proportional to your own channels and messages. A pool with millions of messages costs you no more to scan than a quiet one.</p>
+
+  <h3>Why message payloads need no indexer</h3>
+  <p>For our own slots, correctness needs only an RPC URL — no service whose availability gates delivery, no operator observing query patterns.</p>
+  <p>An indexer for payloads remains <strong>optional</strong>, purely as a latency optimisation — batching many slot reads into one response, pushing notifications instead of polling, serving mobile clients that cannot afford a chatty scan. If one is built it should hold no keys: it caches ciphertext keyed by slot address, and clients verify what they get by decrypting. A tampered or withheld payload fails its Poly1305 check or simply looks like an empty slot, so an indexer can degrade availability but never confidentiality or integrity.</p>
+  <p>Query privacy is worth a note: asking an indexer for specific slot addresses reveals a client's interest set. Prefix bucketing solves it, and plain RPC avoids it entirely. Because the RPC path is always available, this is a preference rather than a design constraint.</p>
+
+  <h3>Retention</h3>
+  <p>Not our decision. Helper storage is WriteOnce and permanent — messages persist as long as Starknet does. There is no retention window to design and no cold-storage policy to write. The consequence runs the other way: <strong>messages cannot be deleted.</strong> The UI must not imply otherwise, and users should be told before their first send.</p>
+</section>
+
+<section id="submission">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Submission</h2></div>
+  <div class="note">
+    <p class="note-label">Deleted from the previous revision</p>
+    <p>A relayer network that had to be designed, built, funded and decentralised, on the grounds that without it there was no sender anonymity. STRK20 supplies the same property two ways, neither of which requires us to operate infrastructure.</p>
+  </div>
+
+  <h3>Where anonymity actually comes from</h3>
+  <p><strong>At the helper: the pool is the caller.</strong> During <code>InvokeExternal</code>, <code>get_caller_address()</code> inside the helper is the pool for every message from every user. The helper cannot distinguish its callers even in principle, because it never sees them.</p>
+  <p><strong>At the transaction: a paymaster submits.</strong> Starknet's account model still puts a public <code>account_contract_address</code> on every transaction — that part of the earlier analysis holds. The answer is that a paymaster relays it; AVNU's private-swap flow documents exactly this.</p>
+  <p><strong>Underneath both: the proof.</strong> Authorization is checked by account-abstraction signature verification <em>inside</em> the proven virtual execution, not by the outer transaction's signature. That is what makes third-party submission sound — the submitter proves nothing about themselves and cannot alter the actions, since the pool verifies that the proven message hash matches the submitted actions exactly.</p>
+
+  <h3>Proving latency is the UX</h3>
+  <div class="note warn">
+    <p class="note-label">The largest practical constraint, and it is inherited</p>
+    <p><strong>~29 s per transaction</strong> on a 12-core / 46 GiB machine. Combined with one <code>InvokeExternal</code> per transaction: a message costs ~29 s regardless of size, three messages in one invoke also cost ~29 s, and three messages in three transactions cost ~87 s and three fees.</p>
+  </div>
+  <p>So the client is an <strong>outbox that batches and flushes</strong>, not a chat window that sends on enter. Design the UI around that from the start; retrofitting batching onto a send-on-enter interface is much harder than starting with it. Three levers, in order of leverage: batch aggressively within one invoke; prove in the background while the user keeps typing; self-host or provision a faster prover if latency remains unacceptable.</p>
+
+  <h3>Choosing a paymaster</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+    <tbody>
+      <tr><td>AVNU paymaster</td><td>Documented, in production for private swaps. Adds a third-party dependency for liveness.</td></tr>
+      <tr><td>Self-hosted paymaster</td><td>Full control; you fund gas and become the visible submitter for all your users, which is itself a fine anonymity property.</td></tr>
+      <tr><td>Direct submission</td><td>No dependency. The user's own address is the public submitter — the pool's internal privacy still holds, but the transaction is linkable to them.</td></tr>
+    </tbody>
+  </table></div>
+  <p>One operational detail from AVNU's docs: the <code>sponsored_private</code> fee mode needs an API key that <strong>must stay server-side</strong>. A browser client should split the flow — build and submit from a server endpoint, run only the proving step client-side with the user's wallet.</p>
+  <p>Direct submission must remain available as a liveness fallback, and must be an explicit choice with a clear warning rather than a silent degradation.</p>
+
+  <h3>What each party can and cannot do</h3>
+  <p><strong>The paymaster</strong> cannot read messages (no keys), alter them (the proof binds the actions), or forge them. It can refuse service, delay, and observe submitter IP and timing. <em>Mitigations:</em> rotate paymasters, use Tor or a proxy, add send jitter.</p>
+  <p><strong>The proving service</strong> sees the witness — including the actions being proven. It is remote by default, not a local WASM prover, and it is a more sensitive position than the paymaster's. Self-host for sensitive deployments.</p>
+  <p><strong>The pool</strong> sees nothing it does not already see for payments.</p>
+</section>
+
+<section id="decisions">
+  <div class="sec-head"><span class="sec-num">09</span><h2>Open decisions</h2></div>
+  <p class="lede">Adopting STRK20 resolved six of the eight decisions in the previous revision outright and replaced two more with sharper versions. What remains is smaller, better-defined, and mostly answerable by reading source or running a benchmark rather than by architectural argument.</p>
+
+  <h3>Resolved by adopting STRK20</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Question</th><th>Resolution</th></tr></thead>
+    <tbody>
+      <tr><td>D1</td><td>Which privacy pool?</td><td><strong>STRK20</strong>, deployed Mainnet <code>0x040337b1…e812a</code> / Sepolia <code>0x0254a6b2…e0d91</code>. Inherits a live anonymity set.</td></tr>
+      <tr><td>D3</td><td>Relayer trust model</td><td>No relayer to build. A paymaster decouples the submitter — see D3′ below.</td></tr>
+      <tr><td>D4</td><td>Curve choice</td><td><strong>STARK curve</strong>, Poseidon. No second key for users to back up.</td></tr>
+      <tr><td>D5</td><td>Volume / discovery scaling</td><td>Dense-index walk scales with <em>your</em> channels, not pool volume. Fuzzy Message Detection unnecessary.</td></tr>
+      <tr><td>D7</td><td>Messaging-key discovery</td><td>On-chain <code>SetViewingKey</code> registry already exists. Nothing to build.</td></tr>
+      <tr><td>D8</td><td>Proof system</td><td><strong>Stwo</strong>, verified in-protocol. No Garaga verifier, no trusted setup, no benchmark.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Two of these — D1 and D8 — were the previous revision's "blocking, answer before writing code" items. Both are closed.</p>
+
+  <div class="dec" id="d2">
+    <div class="dec-top"><span class="dec-id">D2′</span><h3>The proof-validity window</h3><span class="tag soft">Resolved</span></div>
+    <p><code>proof_validity_blocks</code> defaults to <strong>450 blocks — roughly 15 minutes at 2 s/block</strong> — and is governance-settable. Against ~29 s of proving that is a comfortable margin, not the race the previous revision flagged.</p>
+    <p>Two related conventions matter more in practice, and both belong in the SDK wrapper rather than in application code: <strong>prove at <code>currentBlock − 10</code></strong>, since notes mature 10 blocks after creation and proving at the head risks reorg invalidation; and <strong>re-fetch <code>provingBlockId</code> after every <code>waitForTransaction</code></strong> when chaining transactions.</p>
+  </div>
+
+  <div class="dec" id="d3">
+    <div class="dec-top"><span class="dec-id">D3′</span><h3>Which paymaster</h3><span class="tag soft">Shapes v1</span></div>
+    <p>AVNU's paymaster is documented and in production; self-hosting gives control and makes you the single visible submitter for all your users; direct submission needs no third party but exposes the user's address.</p>
+    <div class="rec"><b>Recommendation</b>AVNU for v1 with the API key held server-side, self-hosted paymaster as a fast follow, direct submission always available as a liveness fallback with an explicit warning.</div>
+  </div>
+
+  <div class="dec" id="d9">
+    <div class="dec-top"><span class="dec-id">D9</span><h3>Where does the payload live?</h3><span class="tag block">Blocking · benchmark</span></div>
+    <p>The design files ciphertext in the helper's WriteOnce storage, matching the pool's convention and making discovery a storage read. The cost is real: <strong>one slot per 31 bytes</strong>, billed as L1 data gas — a 1 KiB message is ~34 slots.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td>Helper storage <em>(current)</em></td><td>Consistent with notes; discovery is a plain RPC read; permanent. Most expensive.</td></tr>
+        <tr><td>Events</td><td>Far cheaper (L2 gas). But event data is not in the L1 state diff, and discovery becomes a log query — a different scan with different availability.</td></tr>
+        <tr><td>Hybrid</td><td>Body in an event, commitment in one storage slot. Cheap and anchored, but discovery needs both paths.</td></tr>
+        <tr><td>Off-chain body</td><td>Only a locator and key on-chain. Cheapest; reintroduces an availability dependency the current design does not have.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="rec"><b>Next step</b>Benchmark a 256 B and a 4 KiB message on Sepolia before committing. It constrains the padding buckets, the message-size ceiling, and the per-message price the user sees.</div>
+  </div>
+
+  <div class="dec" id="d10">
+    <div class="dec-top"><span class="dec-id">D10</span><h3>Do we inherit auditability?</h3><span class="tag block">Blocking · product</span></div>
+    <p>Filing messages under STRK20 channel keys means the escrowed auditor key recovers <strong>message content</strong>, not just payment history.</p>
+    <ul>
+      <li><strong>Inherit it.</strong> One key, one backup, full consistency with the pool's compliance model. Content is disclosable under lawful process.</li>
+      <li><strong>Escape it.</strong> Derive body keys from material outside the viewing-key hierarchy, so the auditor recovers metadata but not plaintext. Costs the single-key property, and arguably works against the pool's compliance design in a way its operators may not welcome.</li>
+    </ul>
+    <div class="rec"><b>Recommendation</b>Inherit, and state it plainly in the product. Then remove anonymous tips and dissident communication from the pitch rather than qualifying them — a privacy product that overstates its threat model is worse than one with a narrower honest claim.</div>
+  </div>
+
+  <div class="dec" id="d11">
+    <div class="dec-top"><span class="dec-id">D11</span><h3>Client shape under ~29 s proving</h3><span class="tag soft">Shapes the product</span></div>
+    <p>Proving latency plus one-invoke-per-transaction means the client is an outbox that batches and flushes, not a chat window. Is that acceptable for the intended product, or does the target use case need sub-second sends?</p>
+    <p>If it does, this is the wrong substrate, and that should be known now rather than after the helper is written. Payment memos and escrow negotiation tolerate 30 s comfortably. Conversational chat does not.</p>
+  </div>
+
+  <div class="dec" id="d12">
+    <div class="dec-top"><span class="dec-id">D12</span><h3>Does a zero-value invoke work?</h3><span class="tag block">Blocking · one afternoon</span></div>
+    <p>The whole pure-message path assumes a helper can be invoked with no token movement, returning an empty <code>Span&lt;OpenNoteDeposit&gt;</code>. STRK20's docs state an empty span is valid, and the escrow helper's deposit step relies on it — but the balance invariant ("every token's balance must end at exactly zero") has not been checked for a transaction that moves no tokens at all.</p>
+    <div class="rec"><b>Verify first</b>Check against <a href="https://github.com/starkware-libs/starknet-privacy">starkware-libs/starknet-privacy</a> before anything else. If a pure-message transaction is rejected, every message must carry a token movement — a dust self-transfer, most likely — which changes cost, UX and the threat model.</div>
+  </div>
+
+  <h3>Verification list</h3>
+  <p>Claims in this document drawn from STRK20's documentation rather than its source:</p>
+  <ol class="body">
+    <li><strong>Channel-key and note-id derivations</strong> are exactly as documented — the SDK must match byte-for-byte or discovery silently returns nothing.</li>
+    <li><strong>Zero-value invoke</strong> validity (D12).</li>
+    <li><strong>Storage cost per slot</strong> on current Starknet fee parameters (D9).</li>
+    <li><strong>Paymaster submitter decoupling</strong> — confirmed for AVNU's private-swap flow; verify it holds for an arbitrary pool transaction carrying our <code>InvokeExternal</code>.</li>
+    <li><strong>Proving time</strong> — ~29 s is STRK20's published figure for a payment-shaped transaction. Measure it for one carrying a large message payload.</li>
+  </ol>
+</section>
+
+<section id="stack">
+  <div class="sec-head"><span class="sec-num">10</span><h2>Tech stack</h2></div>
+  <p class="lede">Most of this stack is determined rather than chosen. The parts that are genuinely open are marked as such.</p>
+
+  <h3>Determined</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Layer</th><th>Choice</th><th>Why it is forced</th></tr></thead>
+    <tbody>
+      <tr><td>Contract language</td><td><strong>Cairo</strong>, Scarb, <code>snforge</code></td><td>The helper implements <code>privacy_invoke</code> and depends on the <code>privacy</code> crate for <code>OpenNoteDeposit</code></td></tr>
+      <tr><td>Client language</td><td><strong>TypeScript</strong></td><td>The Privacy SDK and starknet.js are TS; no alternative binding exists</td></tr>
+      <tr><td>Runtime floor</td><td><strong>Node.js ≥ 24</strong></td><td>The SDK's <code>ohttp-ts</code> dependency needs modern WebCrypto</td></tr>
+      <tr><td>Chain library</td><td><strong><code>starknet@^10.4.0</code>, pinned</strong></td><td>STRK20 support landed in 10.4.0 and ships on the npm <code>next</code> tag — a bare install resolves to <code>latest</code> and silently lacks it</td></tr>
+      <tr><td>Privacy client</td><td><strong><code>@starkware-libs/starknet-privacy-sdk</code></strong></td><td>Everything routes through <code>createPrivateTransfers</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Chosen</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Concern</th><th>Choice</th><th>Alternative considered</th></tr></thead>
+    <tbody>
+      <tr><td>AEAD</td><td><code>@noble/ciphers</code> — ChaCha20-Poly1305</td><td>WebCrypto AES-GCM: fewer deps, but assumes hardware AES and is clumsier for Node/browser parity</td></tr>
+      <tr><td>Poseidon + STARK curve</td><td>Reuse the Privacy SDK's</td><td>A second implementation invites domain-separation divergence, which fails <em>silently</em> — discovery returns nothing</td></tr>
+      <tr><td>Workspace / tests</td><td>pnpm · <code>snforge</code> · <code>vitest</code></td><td>—</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Install</h3>
+  <pre><code>npm install @starkware-libs/starknet-privacy-sdk
+npm install starknet@^10.4.0</code></pre>
+  <div class="note warn">
+    <p class="note-label">Plan for this in CI on day one</p>
+    <p>The SDK is <strong>not on npmjs.com yet</strong> while StarkWare restores its npm org. It lives on GitHub Packages, which needs a token even for public packages — so a build that depends on a personal <code>gh</code> token is a build that breaks for the next person who joins. Pinning a commit is the more reproducible option.</p>
+  </div>
+  <pre><code>gh auth refresh -h github.com -s read:packages
+npm config set @starkware-libs:registry https://npm.pkg.github.com
+npm config set '//npm.pkg.github.com/:_authToken' "$(gh auth token)"
+
+# or, reproducibly:
+npm install "starkware-libs/starknet-privacy#&lt;commit-sha&gt;"</code></pre>
+
+  <h3>Services we depend on</h3>
+  <p>None of these are ours to build, and all three are runtime network dependencies.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Service</th><th>SDK provider</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Proving</td><td><code>ProvingServiceProofProvider(url, chainId)</code></td><td>Remote. Receives your <em>signed invocation</em>. The most sensitive dependency in the stack.</td></tr>
+      <tr><td>Discovery</td><td><code>IndexerDiscoveryProvider(url, pool, { ohttp: true })</code></td><td>HTTP indexer. Pagination and reorg repair handled server-side.</td></tr>
+      <tr><td>Paymaster</td><td>AVNU, or self-hosted</td><td>Optional. Decouples the submitting address.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Turn on OHTTP.</strong> <code>{ ohttp: true }</code> wraps discovery traffic in Oblivious HTTP envelope encryption, hiding the client's IP from the discovery service. Free metadata resistance — make it the default, not an option.</p>
+
+  <h3>Repository layout</h3>
+  <pre><code>contracts/          Scarb workspace
+  src/message_anonymizer.cairo
+  tests/            snforge — including negative tests
+sdk/                TS extension over the Privacy SDK
+vectors/            frozen JSON test vectors, consumed by BOTH sides
+apps/cli/           Node CLI — build this first
+apps/desktop/       later; see §13</code></pre>
+  <p><code>vectors/</code> is the interface between <code>contracts/</code> and <code>sdk/</code>. Freeze it first and the two parallelise; skip it and they diverge silently.</p>
+
+  <h3>The development loop</h3>
+  <div class="note stop">
+    <p class="note-label">There is effectively no local loop</p>
+    <p>Proving is a remote service and the pool lives on Sepolia and Mainnet. Standing up devnet plus a pool deployment plus a proving service is a project of its own, so realistic iteration is against <strong>Sepolia at roughly 29 s per proof</strong>.</p>
+  </div>
+  <p>Three things make that survivable, all worth building before feature work: <code>strk20PrepareInvoke(actions, true)</code> simulates and proves without submitting, which is the cheapest way to catch a calldata-shape mistake; derivations, AEAD, packing and slot addressing are pure functions that need no chain at all; and the helper's single entry point can be tested under <code>snforge</code> from a mock caller rather than through the real pool.</p>
+
+  <h3>Footguns</h3>
+  <p>All documented, all silent, all worth wrapping once.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Trap</th><th>Symptom</th></tr></thead>
+    <tbody>
+      <tr><td>Viewing key passed as a hex string</td><td>No error — <strong>wrong channel-key derivation</strong> downstream</td></tr>
+      <tr><td><code>tip: 0n</code> omitted on a v3 transaction</td><td><code>Cannot mix BigInt and other types</code></td></tr>
+      <tr><td><code>proofFacts: []</code> passed rather than omitted</td><td>starknet.js serializes an invalid v3 transaction</td></tr>
+      <tr><td><code>provingBlockId</code> omitted</td><td>Intermittent failures on immature notes, worse prover cache hits</td></tr>
+      <tr><td>Stale nonce after a failed submit</td><td>Retry loops on rejected proofs — call <code>invalidateProofNonceCache()</code></td></tr>
+      <tr><td>Deep import into <code>dist/internal/</code></td><td><code>ERR_PACKAGE_PATH_NOT_EXPORTED</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="impl">
+  <div class="sec-head"><span class="sec-num">11</span><h2>Implementation</h2></div>
+  <p class="lede">Build order, with the code the interfaces determine. Anything marked <em>unverified</em> comes from documentation rather than from reading source, and must be confirmed before it is relied on.</p>
+
+  <h3>Step 0 — Confirm the pure-message path</h3>
+  <p>Everything below assumes a pool transaction can carry an <code>InvokeExternal</code> and move no tokens. The docs say an empty span is valid and the escrow helper relies on it — but every worked example pairs <code>invoke</code> with a <code>transfer</code> that opens a note.</p>
+  <pre><code>// Cheapest possible probe: simulate an invoke-only action list.
+const prepared = await account.strk20PrepareInvoke(
+  [{ type: "invoke", contract: helperAddress, calldata: [/* one message */] }],
+  true,   // simulate — builds and proves without submitting
+)</code></pre>
+  <p>If this is rejected, every message must carry a token movement — a dust self-transfer — which changes cost, UX and the threat model. <strong>Do this before writing anything else.</strong></p>
+
+  <h3>Step 1 — Freeze test vectors</h3>
+  <pre><code>{
+  "channel_key": { "sender": "0x…", "sender_sk": "0x…", "recipient": "0x…",
+                   "recipient_pk": "0x…", "expected": "0x…" },
+  "msg_id":      { "channel_key": "0x…", "index": 0, "expected": "0x…" },
+  "msg_key":     { "channel_key": "0x…", "index": 0, "expected": "0x…" },
+  "packing":     { "bytes": "…base64…", "expected_felts": ["0x…", "0x…"] }
+}</code></pre>
+  <p><strong>Generate <code>channel_key</code> from the SDK itself, not from the documented formula.</strong> The formula is the thing under test; a vector derived from shipped code is the ground truth.</p>
+
+  <h3>Step 2 — The helper contract</h3>
+  <pre><code>#[storage]
+struct Storage {
+    pool: ContractAddress,
+    /// msg_id -&gt; number of felts stored; 0 means empty (end of the dense list)
+    len: Map&lt;felt252, u32&gt;,
+    /// (msg_id, offset) -&gt; payload felt
+    data: Map&lt;(felt252, u32), felt252&gt;,
+}
+
+fn privacy_invoke(
+    ref self: ContractState,
+    messages: Span&lt;EncryptedMessage&gt;,
+    deposits: Span&lt;OpenNoteDeposit&gt;,
+) -&gt; Span&lt;OpenNoteDeposit&gt; {
+    assert(get_caller_address() == self.pool.read(), 'CALLER_NOT_POOL');
+
+    for m in messages {
+        let id = *m.msg_id;
+        assert(self.len.entry(id).read() == 0, 'SLOT_OCCUPIED');
+        let n = m.ciphertext.len();
+        assert(n &gt; 0, 'EMPTY_PAYLOAD');
+
+        let mut i: u32 = 0;
+        while i != n {
+            self.data.entry((id, i)).write(*m.ciphertext.at(i));
+            i += 1;
+        };
+        self.len.entry(id).write(n);
+    };
+
+    deposits   // pass through; empty span for a pure message
+}</code></pre>
+  <p><strong><code>caller == pool</code></strong> is the only access control needed, and it is where sender anonymity lives — the helper never sees who initiated.</p>
+  <p><strong><code>len == 0</code> means empty</strong>, which is what makes the recipient's dense-index walk terminate. Rejecting an occupied slot rather than skipping it is a correctness requirement, not hygiene: a gap silently truncates every future scan.</p>
+  <p>Negative tests that matter: a direct call from a non-pool address, a second write to an occupied <code>msg_id</code>, an empty ciphertext array, and a non-empty deposits span returned verbatim.</p>
+
+  <h3>Step 3 — Encrypt and pack</h3>
+  <pre><code>const BUCKETS = [256, 1024, 4096] as const
+const NONCE = new Uint8Array(12)   // safe: key is unique per message
+
+export function seal(channelKey: bigint, index: number, body: Uint8Array) {
+  const id  = msgId(channelKey, index)          // h(MSG_ID_TAG,  ck, i)
+  const key = feltToBytes32(msgKey(channelKey, index))  // h(MSG_KEY_TAG, ck, i)
+
+  const bucket = BUCKETS.find(b =&gt; body.length + HEADER &lt;= b)
+  if (!bucket) throw new Error("exceeds 4 KiB; chunk it or store off-chain")
+
+  const plaintext = pad(frame(body), bucket)
+  const ct = chacha20poly1305(key, NONCE, feltToBytes32(id)).encrypt(plaintext)
+  return { msgId: id, felts: packFelts(ct) }    // 31 bytes per felt, LE per chunk
+}</code></pre>
+  <p><code>msgId</code> as AAD is what stops a ciphertext being replayed into a different slot. The all-zero nonce is safe <em>only</em> because <code>key_i</code> is unique per message — assert that in tests rather than trusting the comment.</p>
+
+  <h3>Step 4 — Send</h3>
+  <p>Two paths, depending on the client architecture (<a href="#client">§12</a>).</p>
+  <h4>Wallet API — browser, no viewing key in the app</h4>
+  <pre><code>const actions: STRK20_ACTION[] = [
+  { type: "invoke", contract: helperAddress, calldata: serializeMessages(msgs) },
+]
+const { transaction_hash } = await account.strk20InvokeTransaction(actions)</code></pre>
+  <p>Calldata order must match <code>privacy_invoke</code>'s signature exactly — the pool deserializes it straight into the function's parameters. Placeholders <code>${openNoteIds[N]}</code> and <code>${poolAddress}</code> are available when a memo rides an open note.</p>
+  <h4>Low-level SDK — full control, viewing key in the app</h4>
+  <pre><code>const provingBlockId = (await provider.getBlockNumber()) - 10
+
+const { callAndProof } = await transfers
+  .build({ autoSetup: true })
+  .surplusTo(account.address)
+  .with(token, t =&gt; t.inputs(note).transfer({ recipient: bob, amount: 50n }))
+  // .invoke(...) — attach the message payload here
+  .execute({ provingBlockId })</code></pre>
+  <div class="note warn">
+    <p class="note-label">Unverified</p>
+    <p>The low-level builder's generic <code>invoke()</code> signature. Only <code>transfers.build().subaccounts(dappName).invoke(...)</code> appears in the docs — confirm the anonymizer form against <a href="https://github.com/starkware-libs/starknet-privacy">starkware-libs/starknet-privacy</a> before building on it.</p>
+  </div>
+
+  <h3>The submission tail</h3>
+  <p>Identical for every operation. Write it once and never hand-write it again.</p>
+  <pre><code>export async function submit(account, provider, callAndProof) {
+  const proofDetails = callAndProof.proof.proofFacts?.length
+    ? { proofFacts: callAndProof.proof.proofFacts, proof: callAndProof.proof.data }
+    : {}                                    // must be OMITTED, never empty arrays
+  const tx = await account.execute(callAndProof.call, { tip: 0n, ...proofDetails })
+  return provider.waitForTransaction(tx.transaction_hash)
+}</code></pre>
+  <p>On any failure — revert, <code>INVALID_NONCE</code>, replacement underpriced — call <code>transfers.invalidateProofNonceCache()</code> before rebuilding, or the retry loops on proofs the chain keeps rejecting.</p>
+
+  <h3>Step 5 — Discover and batch</h3>
+  <pre><code>for (const [peer, ch] of channels) {
+  let i = cursors.get(peer) ?? 0
+  for (;;) {
+    const len = await slotLen(helper, msgId(ch.key, i))
+    if (len === 0n) break                    // dense list ends here
+    found.push(await readAndOpen(helper, ch.key, i, len))
+    i++
+  }
+  cursors.set(peer, i)
+}</code></pre>
+  <p>One call per index is the naive form and costs a round trip each — batch with a multicall, or add a view returning several lengths at once, before this reaches a real client.</p>
+  <p>The pool enforces <strong>one <code>invoke()</code> per transaction</strong> and the builder errors if you chain two, so batching happens <em>inside</em> one invoke, in the helper's calldata. Larger batches mean larger proofs and can hit proof-size limits: wrap the submission in try/catch and fall back to a smaller batch rather than failing the send.</p>
+</section>
+
+<section id="client">
+  <div class="sec-head"><span class="sec-num">12</span><h2>Client &amp; UI</h2></div>
+
+  <h3>The constraint that forces the architecture</h3>
+  <p>Sending a message needs two capabilities, and STRK20 splits them across two integration routes.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Capability</th><th>Wallet API route</th><th>Low-level SDK route</th></tr></thead>
+    <tbody>
+      <tr><td>Submit an anonymizer invoke</td><td><span class="pill h">yes</span> <code>strk20InvokeTransaction</code>, explicitly without touching a viewing key</td><td><span class="pill h">yes</span></td></tr>
+      <tr><td>Access the viewing key, to derive <code>channel_key</code></td><td><span class="pill v">no</span> by design</td><td><span class="pill h">yes</span></td></tr>
+      <tr><td>Runs in a browser</td><td><span class="pill h">yes</span></td><td><span class="pill v">documented Node ≥ 24 only</span></td></tr>
+    </tbody>
+  </table></div>
+  <p>So submission is not the problem. <strong>Cryptography is.</strong> Any client that encrypts or decrypts under STRK20 channel keys needs the viewing key, and the route that grants it has no documented browser support. That produces two coherent architectures rather than one blocked path.</p>
+
+  <h3>Option A — inherit STRK20's keys</h3>
+  <p>Messages filed under <code>channel_key</code>, exactly as designed in <a href="#crypto">§04</a>. The client is then wallet-class software holding viewing keys, on Node: a desktop app with a Node sidecar, a local daemon behind a localhost UI, a CLI, or a feature inside an existing privacy wallet. Channel establishment and discovery come free. The escrowed auditor key reads message content (<a href="#d10">D10</a>).</p>
+  <p><strong>Best when</strong> the product is a wallet, or ships as a feature of one.</p>
+
+  <h3>Option B — independent messaging keys</h3>
+  <p>Derive a messaging keypair from a single wallet signature — the pattern STRK20's own Privacy Bridge uses — and do ECDH against a registered messaging public key, deriving slots and body keys from <em>that</em> secret rather than the pool viewing key.</p>
+  <pre><code>msk    = h(sign(wallet, "strk20-msg/v1"), "identity")  mod n
+MPK    = msk · G
+crk    = h(ECDH(msk, MPK_peer).x, "channel")
+msg_id = h(MSG_ID_TAG, crk, index)</code></pre>
+  <p>No viewing key needed, so the whole client runs in a browser and submits via <code>strk20InvokeTransaction</code>. <strong>The auditor cannot read message content</strong> — key recovery yields metadata only, resolving <a href="#d10">D10</a> in the other direction. The costs: we build channel establishment, intro discovery and the tag ratchet ourselves — roughly the design deleted in the v0.1→v0.2 revision — and users hold a second key, though a signature-derived one they never see.</p>
+  <p><strong>Best when</strong> the product is a dapp, or when auditor-readable content is unacceptable.</p>
+
+  <div class="note" id="d13">
+    <p class="note-label">Recommendation</p>
+    <p><strong>Option A for v1, via a CLI, with the browser-bundling spike run in parallel.</strong> The CLI runs on Node natively, proves the whole path, and carries no UI risk. Two cheap experiments decide whether Option B is even necessary: <strong>bundle the Privacy SDK into a Vite app</strong> — the stated reason for the Node floor is that <code>ohttp-ts</code> "needs modern WebCrypto", but browsers have had WebCrypto for years, so this reads like a Node <em>version</em> floor rather than a browser exclusion; and <strong>ask whether a wallet-side derivation method is on the roadmap</strong>, since a <code>strk20DeriveChannelKey(peer)</code> call would make Option A work in a browser with no key exposure. Option B should be a deliberate choice about auditability, not a workaround for a bundler.</p>
+  </div>
+
+  <h3>The interface is an outbox, not a chat window</h3>
+  <p>Four constraints point the same way, and designing against them produces a worse product than designing for them: <strong>~29 s proving</strong> and <strong>one invoke per transaction</strong> make batching the primary interaction; <strong>one storage slot per 31 bytes</strong> means every send costs real money; <strong>WriteOnce storage</strong> means nothing can be deleted; and <strong>10-block note maturity</strong> makes pending states inherent.</p>
+  <h4>Send states</h4>
+  <p>Never show an optimistic sent tick. Four of these last long enough for a user to notice.</p>
+  <pre><code>Draft → Queued → Proving (~29 s) → Submitted → Confirmed</code></pre>
+  <h4>Make the batch a control, not a spinner</h4>
+  <pre><code>┌──────────────────────────────────────────────┐
+│  Outbox · 3 messages queued                  │
+│  ~29 s · ~$0.04 · one transaction            │
+│                              [ Send batch ]  │
+└──────────────────────────────────────────────┘</code></pre>
+  <p>Users tolerate latency they can see coming and chose to trigger. They do not tolerate a spinner that appears after they press enter. The batching constraint, surfaced honestly, is better UX than the same delay hidden.</p>
+  <h4>Show cost and tier before sending</h4>
+  <p>Padding buckets are visible in the price, so show them — <code>256 B tier</code> — and warn at boundaries: <em>"12 more characters moves this to the 1 KiB tier, +$0.03."</em> Otherwise message length is an invisible cost cliff users discover by paying for it.</p>
+  <h4>Sync state is first-class</h4>
+  <p>A stale indexer renders as "no new messages," the worst possible failure mode for a messaging app. Put <code>synced to block 1,284,332 · 2 min ago</code> in the chrome, not in a settings pane.</p>
+
+  <div class="note stop">
+    <p class="note-label">Three things the UI must say at onboarding</p>
+    <p><strong>1.</strong> An auditor can read these messages under lawful process (Option A) — a user who learns this later has been misled. <strong>2.</strong> Messages are permanent; offer no delete affordance, and if you offer "hide," label it local-only and mean it. <strong>3.</strong> "A message was sent" is public, even though the content and both parties are not.</p>
+  </div>
+
+  <h3>Two flows that need real design</h3>
+  <p><strong>Unregistered recipient.</strong> You cannot send to someone who has not run <code>SetViewingKey</code>. That is a hard failure at compose time, and STRK20's escrow helper solves the payments version with an off-band claim link — the messaging analogue needs designing rather than erroring.</p>
+  <p><strong>Directional channels.</strong> Alice→Bob and Bob→Alice are separate lanes with independent indices. The thread view stitches them, but the asymmetry leaks into sync: your sends and their arrivals confirm on different schedules, and the timeline must stay coherent while that happens.</p>
+  <p><strong>Registration</strong> can be smoothed with <code>autoRegister: true</code>, which bundles it into the user's first real operation instead of demanding a separate transaction upfront.</p>
+</section>
+
+<section id="milestones">
+  <div class="sec-head"><span class="sec-num">13</span><h2>Milestones</h2></div>
+  <p class="lede">Eight milestones, two of which are <strong>gates</strong> — points where the project produces something that actually runs rather than something that merely compiles.</p>
+  <p>Sizes are engineer-weeks assuming <strong>one Cairo engineer and one TypeScript engineer working in parallel</strong>. Calendar time differs with team size; the ordering and the dependencies do not.</p>
+
+  <figure>
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Milestone dependency graph: spikes feed the crypto core and helper contract in parallel, which converge on the first end-to-end message; batching and discovery then run in parallel before the client shell and hardening.">
+      <defs>
+        <marker id="a3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="d-fill"/></marker>
+      </defs>
+
+      <rect x="16" y="76" width="128" height="54" rx="3" class="d-box"/>
+      <text x="80" y="99" class="d-tm" text-anchor="middle" font-size="10.5">M0 · 1 wk</text>
+      <text x="80" y="117" class="d-t" text-anchor="middle">Spikes</text>
+
+      <rect x="184" y="76" width="128" height="54" rx="3" class="d-box"/>
+      <text x="248" y="99" class="d-tm" text-anchor="middle" font-size="10.5">M1 · 1–2 wk</text>
+      <text x="248" y="117" class="d-t" text-anchor="middle">Crypto core</text>
+
+      <rect x="184" y="176" width="128" height="54" rx="3" class="d-box"/>
+      <text x="248" y="199" class="d-tm" text-anchor="middle" font-size="10.5">M2 · 1–2 wk</text>
+      <text x="248" y="217" class="d-t" text-anchor="middle">Helper contract</text>
+
+      <rect x="352" y="76" width="128" height="54" rx="3" class="d-own"/>
+      <text x="416" y="99" class="d-tm" text-anchor="middle" font-size="10.5">M3 · 1–2 wk</text>
+      <text x="416" y="117" class="d-t" text-anchor="middle">First message</text>
+      <text x="416" y="150" class="d-hot" text-anchor="middle">GATE · ALPHA</text>
+
+      <rect x="520" y="76" width="128" height="54" rx="3" class="d-box"/>
+      <text x="584" y="99" class="d-tm" text-anchor="middle" font-size="10.5">M4 · 2 wk</text>
+      <text x="584" y="117" class="d-t" text-anchor="middle">Batch + memo</text>
+
+      <rect x="520" y="176" width="128" height="54" rx="3" class="d-box"/>
+      <text x="584" y="199" class="d-tm" text-anchor="middle" font-size="10.5">M5 · 1–2 wk</text>
+      <text x="584" y="217" class="d-t" text-anchor="middle">Discovery</text>
+
+      <rect x="688" y="76" width="128" height="54" rx="3" class="d-box"/>
+      <text x="752" y="99" class="d-tm" text-anchor="middle" font-size="10.5">M6 · 3–4 wk</text>
+      <text x="752" y="117" class="d-t" text-anchor="middle">Client shell</text>
+
+      <rect x="856" y="76" width="128" height="54" rx="3" class="d-own"/>
+      <text x="920" y="99" class="d-tm" text-anchor="middle" font-size="10.5">M7 · 3–4 wk</text>
+      <text x="920" y="117" class="d-t" text-anchor="middle">Hardening</text>
+      <text x="920" y="150" class="d-hot" text-anchor="middle">GATE · PRODUCTION</text>
+
+      <path d="M144,103 H176" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M144,103 H164 V203 H176" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M312,103 H344" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M312,203 H332 V103 H344" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M480,103 H512" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M480,103 H500 V203 H512" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M648,103 H680" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M648,203 H668 V103 H680" class="d-edge" marker-end="url(#a3)"/>
+      <path d="M816,103 H848" class="d-edge" marker-end="url(#a3)"/>
+
+      <rect x="16" y="264" width="10" height="10" rx="2" class="d-own"/>
+      <text x="32" y="273" class="d-xs">gate — something runs end to end</text>
+      <rect x="264" y="264" width="10" height="10" rx="2" class="d-box"/>
+      <text x="280" y="273" class="d-xs">milestone</text>
+      <text x="984" y="273" class="d-xs" text-anchor="end">stacked pairs run in parallel</text>
+    </svg>
+    <figcaption><b>Risk is front-loaded on purpose.</b> M0–M3 is roughly a quarter of the work and retires most of the uncertainty; M6–M7 is roughly half the work and retires almost none. The two stacked pairs — M1‖M2 and M4‖M5 — are genuinely independent, so a two-person team is not serialised.</figcaption>
+  </figure>
+
+  <h3>M0 — Feasibility spikes</h3>
+  <p><strong>Goal:</strong> kill the design now if it is going to die. No product code. Four experiments, each a day or less.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Spike</th><th>Question</th><th>Resolves</th></tr></thead>
+    <tbody>
+      <tr><td>S1</td><td>Does an invoke-only transaction (no token movement) simulate? <code>strk20PrepareInvoke(actions, true)</code></td><td><a href="#d12">D12</a></td></tr>
+      <tr><td>S2</td><td>Does the Privacy SDK bundle into a Vite app, or is the client Node-only?</td><td><a href="#d13">D13</a></td></tr>
+      <tr><td>S3</td><td>Sepolia storage cost for 256 B and 4 KiB payloads</td><td><a href="#d9">D9</a></td></tr>
+      <tr><td>S4</td><td>Reproduce <code>channel_key</code> from the SDK; find the builder's generic <code>invoke()</code> signature</td><td>Verification list</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Exit criteria</strong> — a written decision record answering: is the pure-message path available; Option A or Option B; storage or events for payloads; per-message cost and latency you would put in front of a user.</p>
+  <div class="note stop">
+    <p class="note-label">Risk: high, and deliberately front-loaded</p>
+    <p>S1 failing means every message must carry a dust transfer. S2 failing decides the entire client architecture. Both are cheap here and expensive in M6.</p>
+  </div>
+
+  <h3>M1 — Crypto core + vectors</h3>
+  <p><strong>Goal:</strong> every pure function, fully tested, with no chain dependency.</p>
+  <p><strong>Deliverables:</strong> frozen <code>vectors/derivations.json</code> generated <em>from the SDK</em>, not from the documented formula; <code>msgId</code> / <code>msgKey</code>; <code>seal</code> / <code>open</code>; <code>packFelts</code> / <code>unpackFelts</code>; padding buckets; framing.</p>
+  <p><strong>Exit:</strong> unit tests green; round-trip property tests across all buckets and boundary lengths; a test asserting <code>key_i</code> uniqueness, since the all-zero nonce depends on it; vectors reproduce byte-for-byte against the SDK.</p>
+  <p><em>Risk: low.</em> This is the part with no unknowns — which is exactly why it should not be where the schedule goes.</p>
+
+  <h3>M2 — Helper contract</h3>
+  <p><strong>Goal:</strong> <code>message_anonymizer.cairo</code>, deployed to Sepolia.</p>
+  <p><strong>Exit:</strong> all four negative tests pass — non-pool caller rejected, occupied slot rejected, empty payload rejected, deposits span returned verbatim; a mock caller writes and reads back a payload; contract declared, deployed and verified on Sepolia.</p>
+  <p><strong>Runs in parallel with M1</strong> once vectors are frozen. That is the entire reason vectors come first.</p>
+
+  <h3>M3 — First message end to end · <span class="d-hot">GATE</span></h3>
+  <p><strong>Goal:</strong> one message, sent from one machine, read on another, on Sepolia.</p>
+  <pre><code>machine A:  $ msg send --to 0xBOB "hello"
+            → proving… submitted… confirmed 0x…
+
+machine B:  $ msg read
+            → [1] from 0xALICE · 2 min ago · "hello"</code></pre>
+  <p>Plus: an observer inspecting that transaction sees the pool and helper addresses, a payload size and a timestamp — and neither party's address, no recipient, no content.</p>
+  <div class="note">
+    <p class="note-label">The milestone that proves the project</p>
+    <p>Everything before it is preparation; everything after it is scale, resilience and polish. If the architecture is wrong, it is wrong here — and M3 is deliberately placed early and cheap so that failure is survivable.</p>
+  </div>
+
+  <h3>M4 — Batching, memo, resilience</h3>
+  <p><strong>Deliverables:</strong> outbox that accumulates and flushes; N messages in one <code>InvokeExternal</code>; memo riding a transfer atomically in one action batch; retry with <code>invalidateProofNonceCache()</code>; <code>provingBlockId</code> re-fetch between chained transactions; proof-size fallback to a smaller batch.</p>
+  <p><strong>Exit:</strong> 8 messages land in one transaction with one proof and one fee; a memo-plus-transfer settles atomically, and reverting the transfer also reverts the memo; a forced submission failure recovers cleanly instead of looping on a rejected proof.</p>
+  <p><em>Risk: medium.</em> Proof-size limits under large batches are a known unknown — the workable batch size has to be found empirically.</p>
+
+  <h3>M5 — Discovery and sync</h3>
+  <p><strong>Goal:</strong> a client that recovers everything from the viewing key alone.</p>
+  <p><strong>Exit:</strong> a client with <strong>no local state</strong> reconstructs full message history from the viewing key; a client interrupted mid-scan resumes without gaps or duplicates; sync state reports the block it has reached.</p>
+  <p><strong>Runs in parallel with M4.</strong> <em>Risk: medium</em> — depends on the discovery service, and today on an indexer, since <code>ContractDiscoveryProvider</code> is not yet exported (<a href="#discovery">§07</a>).</p>
+
+  <h3>M6 — Client shell</h3>
+  <p><strong>Shape is decided by M0/S2</strong> — a browser app if the SDK bundles, otherwise a desktop app with a Node sidecar or a local daemon behind a localhost UI.</p>
+  <p><strong>Deliverables:</strong> the outbox interface; explicit send states; batch control showing count, time and cost; padding-tier cost preview with boundary warnings; sync indicator in the chrome; onboarding disclosures; thread view stitching the two directional channels; unregistered-recipient flow; key backup and restore.</p>
+  <p><strong>Exit:</strong> a user who has never seen the CLI can register, send, receive and understand what is public — verified by watching someone do it, not by asserting it. No delete affordance anywhere. All three disclosures appear at onboarding.</p>
+  <p><em>Risk: medium–high</em>, and mostly product risk. This is where ~29 s proving either works as a designed-for constraint or does not.</p>
+
+  <h3>M7 — Hardening and Mainnet · <span class="d-hot">GATE</span></h3>
+  <p><strong>Deliverables:</strong> external audit of the SDK crypto and the helper contract, in that order; adversarial metadata review against <a href="#threat">§02</a>; a documented auditability position (<a href="#d10">D10</a>) in user-facing copy; Mainnet deployment; incident and key-rotation runbooks.</p>
+  <p><strong>Exit:</strong> audit findings closed; anonymity-set size stated honestly in the product; Mainnet helper deployed and verified.</p>
+  <div class="note warn">
+    <p class="note-label">The long pole</p>
+    <p>Audit scheduling, not engineering. Book it during M5, not after M6.</p>
+  </div>
+
+  <h3>How to read this plan</h3>
+  <p><strong>Two gates, two kinds of confidence.</strong> M3 proves the architecture works; M6 proves the product is usable. They fail for different reasons and need different responses — an M3 failure is a redesign, an M6 failure is a rethink of the product shape.</p>
+  <p><strong>M0 is not optional.</strong> Four documented claims underpin everything, and two can force a redesign. A week here saves a month later.</p>
+  <p><strong>Resist starting the client early.</strong> Effort is back-loaded and correctly so — a beautiful client built on a broken assumption is the expensive failure mode here.</p>
+</section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="footer-in">
+    <span>Encrypted Messaging on STRK20 · architecture &amp; implementation v0.3</span>
+    <span>1 contract · 1 SDK extension · 8 milestones · 5 assumptions to verify</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.rail a'));
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section[id]'));
+  if (!('IntersectionObserver' in window)) { return; }
+  var visible = {};
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
+    var current = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (visible[sections[i].id]) { current = sections[i].id; break; }
+    }
+    if (!current) { return; }
+    links.forEach(function (a) { a.classList.remove('on'); });
+    if (map[current]) { map[current].classList.add('on'); }
+  }, { rootMargin: '0px 0px -70% 0px', threshold: 0 });
+  sections.forEach(function (s) { obs.observe(s); });
+  if (map.summary) { map.summary.classList.add('on'); }
+})();
+</script>
