@@ -124,6 +124,14 @@ export class AppStore {
     this.notify();
   }
 
+  /** Switch mode / connection details (Settings) and reconnect the backend. */
+  updateConnection(patch: Partial<AppConfig>): void {
+    this.config = { ...this.config!, ...patch };
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(this.config));
+    this.connect();
+    this.notify();
+  }
+
   // -- contacts & the unregistered-recipient flow ---------------------------
   async addContact(label: string, peer: string): Promise<Contact> {
     const registered = await this.backend!.isRegistered(peer);

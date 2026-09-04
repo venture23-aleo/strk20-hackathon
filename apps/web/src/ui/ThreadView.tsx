@@ -58,6 +58,25 @@ export function ThreadView({ contact }: { contact: Contact }) {
     <div className="thread">
       <div className="thread-head">
         <strong>{contact.label}</strong> <code>{shorten(contact.peer)}</code>
+        <button
+          className="ghost"
+          title="Copy this thread's channel keys, to configure the peer's client"
+          onClick={() =>
+            void navigator.clipboard.writeText(
+              JSON.stringify(
+                {
+                  // From the peer's point of view: THEIR inbox is our outKey.
+                  readsYourMessagesWith: contact.outKey,
+                  sendsToYouWith: contact.inKey,
+                },
+                null,
+                2
+              )
+            )
+          }
+        >
+          copy keys
+        </button>
         <span className="head-note">messages are permanent · encrypted end to end</span>
       </div>
 
