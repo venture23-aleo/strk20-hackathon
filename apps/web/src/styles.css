@@ -109,3 +109,11 @@ input, textarea { font: inherit; border: 1px solid var(--line); border-radius: 8
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; margin-top: 10px; }
 
 .empty-state { margin: auto; text-align: center; color: var(--muted); }
+
+/* connection editor */
+input.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+input.invalid { border-color: var(--error); }
+.probe-ok { color: var(--ok); font-size: 13px; }
+.probe-err { color: var(--error); font-size: 13px; }
+.field .row { align-items: stretch; flex-wrap: nowrap; }
+.field .row input { flex: 1; }
