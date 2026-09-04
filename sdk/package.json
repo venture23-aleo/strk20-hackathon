@@ -1,0 +1,31 @@
+{
+  "name": "@strk20-messaging/sdk",
+  "version": "0.1.0",
+  "description": "Messaging extension over the STRK20 Privacy SDK — derivations, AEAD, felt packing, framing",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^1.3.0",
+    "@scure/starknet": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

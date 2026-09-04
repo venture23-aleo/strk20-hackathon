@@ -1,0 +1,10 @@
+{
+  "name": "strk20-messaging",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "vectors": "node vectors/generate.mjs"
+  }
+}
