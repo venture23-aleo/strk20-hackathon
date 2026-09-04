@@ -29,6 +29,7 @@ throughout and collected in [09-open-decisions.md](09-open-decisions.md).
 | [12-client-and-ui.md](12-client-and-ui.md) | The two client architectures, and the outbox interface |
 | [13-milestones.md](13-milestones.md) | **Eight milestones with two shippable gates — start here to build** |
 | [14-m0-decision-record.md](14-m0-decision-record.md) | M0 spike results: D9/D12 resolved, derivations verified, SDK bundles for browser |
+| [15-testnet-runbook.md](15-testnet-runbook.md) | Sepolia checklist: direct-mode run today (Phase A), pool-mode blockers (Phase B) |
 
 ## The one-paragraph version
 
