@@ -193,6 +193,9 @@ recommendation. Direct submission stays available as the liveness fallback.
 
 ## Quick reference
 
+> Canonical address registry: [DEPLOYMENTS.md](../DEPLOYMENTS.md) — update it in the same
+> commit as any deployment. The table below is a convenience snapshot.
+
 | Item | Value |
 | --- | --- |
 | RPC (Sepolia) | `https://api.cartridge.gg/x/starknet/sepolia` (drpc = flaky fallback) |
