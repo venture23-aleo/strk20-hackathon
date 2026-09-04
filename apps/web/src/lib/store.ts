@@ -133,13 +133,17 @@ export class AppStore {
   }
 
   // -- contacts & the unregistered-recipient flow ---------------------------
-  async addContact(label: string, peer: string): Promise<Contact> {
+  async addContact(
+    label: string,
+    peer: string,
+    keys?: { outKey: string; inKey: string }
+  ): Promise<Contact> {
     const registered = await this.backend!.isRegistered(peer);
     const contact: Contact = {
       label,
       peer,
-      outKey: randomFelt(),
-      inKey: randomFelt(),
+      outKey: keys?.outKey ?? randomFelt(),
+      inKey: keys?.inKey ?? randomFelt(),
       registered,
     };
     this.contacts = [...this.contacts.filter((c) => c.label !== label), contact];

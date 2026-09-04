@@ -85,6 +85,46 @@ describe("stitchThread — two directional lanes, one conversation", () => {
   });
 });
 
+describe("invite — pairing two clients onto the same lanes", () => {
+  it("round-trips with mirrored lanes: my out is their in, and vice versa", async () => {
+    const { makeInvite, parseInvite } = await import("../src/lib/contacts.js");
+    const invite = parseInvite(JSON.stringify(makeInvite(contact, "0xa11ce")))!;
+    expect(invite).not.toBeNull();
+    expect(invite.peer).toBe("0xa11ce");
+    expect(invite.yourOutKey).toBe(contact.inKey); // they send on what I read
+    expect(invite.yourInKey).toBe(contact.outKey); // they read what I send
+
+    // the receiver's contact, built from the invite, stitches the SAME thread
+    const theirContact: Contact = {
+      label: "alice",
+      peer: invite.peer,
+      outKey: invite.yourOutKey,
+      inKey: invite.yourInKey,
+      registered: true,
+    };
+    const history = [rec(contact.outKey, 0, 100, "from me"), rec(contact.inKey, 0, 200, "from them")];
+    const mine = stitchThread(history, contact).map((m) => [m.body, m.direction]);
+    const theirs = stitchThread(history, theirContact).map((m) => [m.body, m.direction]);
+    expect(mine).toEqual([
+      ["from me", "sent"],
+      ["from them", "received"],
+    ]);
+    expect(theirs).toEqual([
+      ["from me", "received"],
+      ["from them", "sent"],
+    ]);
+  });
+
+  it("rejects garbage and near-misses", async () => {
+    const { parseInvite } = await import("../src/lib/contacts.js");
+    expect(parseInvite("hello")).toBeNull();
+    expect(parseInvite(JSON.stringify({ peer: "0x1" }))).toBeNull();
+    expect(
+      parseInvite(JSON.stringify({ "strk20msg-invite": 1, peer: "0x1", yourOutKey: "nope", yourInKey: "0x2" }))
+    ).toBeNull();
+  });
+});
+
 describe("backup — key export and restore", () => {
   it("round-trips key, address and contacts", () => {
     const json = exportBackup({

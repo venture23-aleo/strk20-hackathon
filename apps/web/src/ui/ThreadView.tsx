@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { stitchThread, type Contact } from "../lib/contacts.js";
+import { makeInvite, stitchThread, type Contact } from "../lib/contacts.js";
 import { fmtUsd, tierPreview } from "../lib/costs.js";
 import { store } from "../lib/store.js";
 import { shorten } from "./Onboarding.js";
 
 export function ThreadView({ contact }: { contact: Contact }) {
   const [draft, setDraft] = useState("");
+  const [inviteCopied, setInviteCopied] = useState(false);
   const history = store.engine?.history() ?? [];
   const thread = stitchThread(history, contact);
   const preview = tierPreview(draft);
@@ -60,22 +61,16 @@ export function ThreadView({ contact }: { contact: Contact }) {
         <strong>{contact.label}</strong> <code>{shorten(contact.peer)}</code>
         <button
           className="ghost"
-          title="Copy this thread's channel keys, to configure the peer's client"
-          onClick={() =>
+          title="Copy an invite for the other person — they paste it into '+ add' on their side and the thread pairs up"
+          onClick={() => {
             void navigator.clipboard.writeText(
-              JSON.stringify(
-                {
-                  // From the peer's point of view: THEIR inbox is our outKey.
-                  readsYourMessagesWith: contact.outKey,
-                  sendsToYouWith: contact.inKey,
-                },
-                null,
-                2
-              )
-            )
-          }
+              JSON.stringify(makeInvite(contact, store.config!.accountAddress), null, 2)
+            );
+            setInviteCopied(true);
+            setTimeout(() => setInviteCopied(false), 1500);
+          }}
         >
-          copy keys
+          {inviteCopied ? "invite copied ✓" : "copy invite"}
         </button>
         <span className="head-note">messages are permanent · encrypted end to end</span>
       </div>

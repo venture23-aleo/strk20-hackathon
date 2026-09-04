@@ -10,7 +10,13 @@ export function Chrome({ onSettings }: { onSettings: () => void }) {
   const [, tick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => tick((n) => n + 1), 1000);
-    return () => clearInterval(t);
+    // Auto-sync: incoming messages appear without hunting for a button. A
+    // stale view rendering as "no new messages" is the failure mode to avoid.
+    const s = setInterval(() => void store.syncNow(), 15000);
+    return () => {
+      clearInterval(t);
+      clearInterval(s);
+    };
   }, []);
 
   const status = store.engine?.status();

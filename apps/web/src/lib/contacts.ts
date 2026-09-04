@@ -15,6 +15,47 @@ export interface Contact {
   registered: boolean;
 }
 
+/**
+ * Invites pair two clients onto the same pair of lanes. The invite is written
+ * from the RECEIVER's point of view: their outKey is our inKey and vice versa,
+ * so pasting it creates the exactly mirrored contact.
+ */
+export interface Invite {
+  "strk20msg-invite": 1;
+  /** The inviter's address — becomes the receiver's contact.peer. */
+  peer: string;
+  /** Lane the receiver sends on (= inviter's inKey). */
+  yourOutKey: string;
+  /** Lane the receiver reads on (= inviter's outKey). */
+  yourInKey: string;
+}
+
+export function makeInvite(contact: Contact, myAddress: string): Invite {
+  return {
+    "strk20msg-invite": 1,
+    peer: myAddress,
+    yourOutKey: contact.inKey,
+    yourInKey: contact.outKey,
+  };
+}
+
+export function parseInvite(text: string): Invite | null {
+  try {
+    const raw = JSON.parse(text) as Partial<Invite>;
+    if (
+      raw["strk20msg-invite"] === 1 &&
+      typeof raw.peer === "string" &&
+      /^0x[0-9a-fA-F]+$/.test(raw.yourOutKey ?? "") &&
+      /^0x[0-9a-fA-F]+$/.test(raw.yourInKey ?? "")
+    ) {
+      return raw as Invite;
+    }
+  } catch {
+    /* not an invite */
+  }
+  return null;
+}
+
 export interface ThreadMessage {
   direction: "sent" | "received";
   body: string;
