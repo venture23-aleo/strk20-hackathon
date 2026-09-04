@@ -1,0 +1,27 @@
+[package]
+name = "message_anonymizer"
+version = "0.1.0"
+edition = "2024_07"
+
+[dependencies]
+starknet = "2.17.0"
+# Pinned to the commit M0/M1 were verified against (vectors/_meta.source).
+privacy = { git = "https://github.com/starkware-libs/starknet-privacy", rev = "bc75e4bac71ad0ce10c6e63effc33b5b25131a4f" }
+# Transitive pins: newer 2.2.x of these need Cairo ^2.18, but the privacy repo's
+# toolchain (and ours) is 2.17.0 — match its lockfile.
+openzeppelin_utils = "=2.1.0"
+openzeppelin_interfaces = "=2.1.0"
+
+[dev-dependencies]
+snforge_std = "0.63.0"
+assert_macros = "2.17.0"
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[scripts]
+test = "snforge test"

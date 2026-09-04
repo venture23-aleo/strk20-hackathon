@@ -6,7 +6,14 @@ One contract. No verifier to deploy, no pool modifications, no upgrade proxy.
 
 STRK20 calls anonymizer contracts through a fixed interface. The pool deserializes our
 calldata into `privacy_invoke`'s parameters and deserializes the return value as
-`Span<OpenNoteDeposit>`:
+`Span<OpenNoteDeposit>`.
+
+> **Corrected in M2** (verified against pool source and every shipped anonymizer): deposits
+> are the *return value only* — there is no `deposits` input parameter. The pool serializes
+> the invoke calldata straight into whatever parameters the anonymizer declares, and applies
+> whatever deposits span it returns. A pure message returns an empty span. The implemented
+> contract in [`contracts/src/message_anonymizer.cairo`](../contracts/src/message_anonymizer.cairo)
+> is the source of truth.
 
 ```cairo
 use privacy::objects::OpenNoteDeposit;
@@ -14,17 +21,13 @@ use privacy::objects::OpenNoteDeposit;
 #[starknet::interface]
 pub trait IMessageAnonymizer<T> {
     /// Called by the privacy pool during InvokeExternal (phase 7, at most once per tx).
-    fn privacy_invoke(
-        ref self: T,
-        messages: Span<EncryptedMessage>,
-        deposits: Span<OpenNoteDeposit>,
-    ) -> Span<OpenNoteDeposit>;
+    fn privacy_invoke(ref self: T, messages: Span<EncryptedMessage>) -> Span<OpenNoteDeposit>;
 }
 
-#[derive(Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
 struct EncryptedMessage {
-    msg_id: felt252,          // h(MSG_ID_TAG, channel_key, index)
-    ciphertext: Array<felt252>,  // AEAD output, 31 bytes per felt
+    msg_id: felt252,           // h(MSG_ID_TAG, channel_key, index)
+    ciphertext: Span<felt252>, // AEAD output, 31 bytes per felt
 }
 ```
 
@@ -34,29 +37,16 @@ Rules the pattern imposes, all of which we must satisfy:
 - **An empty span is valid** and means "credit nothing" — the pure-message case. This is the
   behaviour the escrow helper relies on for its parked-funds deposit step, so the pattern is
   established, though we should confirm it against source ([D12](09-open-decisions.md)).
-- **Approve, don't transfer** — irrelevant to us when no value moves; relevant if a memo rides
-  a transfer, where we simply pass the deposits through.
+- **Approve, don't transfer** — irrelevant to us when no value moves. A memo riding a transfer
+  needs no deposits either: the transfer happens as pool-native actions in the same
+  transaction, never through the helper.
 - **One invoke per transaction** — a message batch and a swap cannot share a transaction.
 
 ## Implementation sketch
 
-```cairo
-#[abi(embed_v0)]
-impl MessageAnonymizerImpl of IMessageAnonymizer<ContractState> {
-    fn privacy_invoke(
-        ref self: ContractState,
-        messages: Span<EncryptedMessage>,
-        deposits: Span<OpenNoteDeposit>,
-    ) -> Span<OpenNoteDeposit> {
-        assert(get_caller_address() == self.pool.read(), errors::CALLER_NOT_POOL);
-        for m in messages {
-            assert(self.slots.entry(*m.msg_id).read().is_zero(), errors::SLOT_OCCUPIED);
-            self.write_payload(*m.msg_id, m.ciphertext);
-        }
-        deposits   // pass through; empty for a pure message
-    }
-}
-```
+Superseded by the implemented contract —
+[`contracts/src/message_anonymizer.cairo`](../contracts/src/message_anonymizer.cairo), tested
+in [`contracts/tests/`](../contracts/tests/) against the frozen vectors.
 
 Three properties carry the whole contract:
 
