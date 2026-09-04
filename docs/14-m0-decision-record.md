@@ -100,9 +100,13 @@ zero-amount carrier note and pool bookkeeping.
   stays a plain RPC read, no availability dependency. Events/hybrid remain a fallback if
   blob prices regress by orders of magnitude (they are volatile; the model, not the
   conclusion's margin, is the fragile part).
-- **Residual:** the empirical Sepolia benchmark (real receipt for a 256 B and a 4 KiB
-  message) needs a funded Sepolia account and the deployed helper — it lands naturally with
-  M2's deployment. Public RPC note: BlastAPI is dead; `starknet-sepolia.drpc.org` and
+- ~~**Residual:** the empirical Sepolia benchmark~~ **Closed 2026-09-04** with real Sepolia
+  receipts ([15-testnet-runbook.md](15-testnet-runbook.md) § A6): 256 B message =
+  **0.2076 STRK** (~$0.006), 4 KiB = **2.3185 STRK** (~$0.063), direct mode. The model's
+  conclusion (storage stays) survives, but its emphasis was wrong: DA really is negligible —
+  the fee is **~93% L2 execution gas** from the per-felt storage writes, scaling linearly
+  with payload size. The cost driver argument for small padding buckets holds, for the
+  execution reason rather than the DA reason. Public RPC note: BlastAPI is dead; `starknet-sepolia.drpc.org` and
   `rpc.starknet.lava.build` (mainnet) work.
 
 ## S4 — Derivations and the builder's `invoke()` (verification list items 1 and the builder)

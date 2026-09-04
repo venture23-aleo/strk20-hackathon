@@ -14,7 +14,11 @@ The M3 devnet scenario on a public network: real chain, real contract, real mess
 **The submitter is visible** — direct mode has no pool anonymity; it exists to prove the
 pipeline and to measure real costs.
 
-### A1 ☐ Create or pick a Sepolia account
+### A1 ☑ Create or pick a Sepolia account
+
+> Done 2026-09-04: sncast account `deployer` created at
+> `0x03ab7fda95f39c9b5be0572bd2a115db1bff1db87c88fbcff872473f1f2afac4`
+> (est. deployment fee 0.0829 STRK). Network deploy pending faucet funds (A2).
 
 Either export from a wallet (Argent / Braavos → address + private key), or:
 
@@ -25,14 +29,21 @@ sncast account create --name deployer --network sepolia
 A fresh account must also be **deployed** — `sncast account deploy` after funding, or a
 wallet's first transaction does it.
 
-### A2 ☐ Fund it with Sepolia STRK
+### A2 ☑ Fund it with Sepolia STRK
+
+> Done 2026-09-04: faucet delivered 100 STRK; account deployed —
+> tx `0x0482173cabf4cb0586dae3046112072a8b5f652176430070094a600f2ad04971`.
 
 - https://faucet.starknet.io (or the Alchemy faucet)
 - 1–2 STRK is plenty; fees per message are fractions of a cent.
 
-### A3 ☐ Pick an RPC endpoint
+### A3 ☑ Pick an RPC endpoint
 
-- Works today, no key: `https://starknet-sepolia.drpc.org` (the deploy script's default)
+- **In use:** `https://api.cartridge.gg/x/starknet/sepolia` (spec 0.9.0; sncast 0.63 warns
+  it wants 0.10 but works)
+- `https://starknet-sepolia.drpc.org` worked early on, then began refusing
+  `starknet_getBlockWithTxHashes` mid-session — its load balancer is inconsistent; keep as
+  fallback only
 - More reliable for sustained use: a free keyed endpoint (e.g. Alchemy)
 - **Dead — do not use:** BlastAPI (`*.blastapi.io` returns a shutdown notice)
 
@@ -48,9 +59,20 @@ ACCOUNT=deployer \
 ```
 
 The script declares, deploys, sanity-checks `pool()`, and attempts Voyager verification.
-Record the deployed helper address here: `helper = 0x____________`
 
-### A5 ☐ Configure the CLI and run the M3 transcript
+> ☑ Done 2026-09-04. class hash
+> `0x0096558250259ea6ed253261f660a81e2041f98b2151dc54177cf8a854b08612`, helper deployed at
+> **`0x06409a4a8c1962bbfd6b04ea9ab1f745be8e7bceddc61f4e322dcbc7781ae032`**
+> (tx `0x06b8a04196f3538b6ce5c89003ff4f921f9909e48c545ba23769588f4e4a88fe`);
+> `pool()` echoes the deployer address.
+
+### A5 ☑ Configure the CLI and run the M3 transcript
+
+> Done 2026-09-04, on Sepolia: machine A `send --to bob "hello from Sepolia"` →
+> confirmed `0x2224a360cd80384332d0ead9d7f801e1d4142f40fd98e0814fb7a5302ff395`;
+> machine B (fresh home, channel key only) `read` →
+> `[1] from 0x3ab7… · 21 s ago · "hello from Sepolia"`, and
+> `sync --full` reconstructed it: `synced to block 14,544,448 · 1 message(s) known`.
 
 ```shell
 export STRK20_MSG_PRIVATE_KEY=<key>          # never in config files or the repo
@@ -70,7 +92,7 @@ msg sync --full && msg history     # M5: full reconstruction from chain state
 
 Batching and memo work identically: `msg queue` ×N + `msg flush`, `msg pay`.
 
-### A6 ☐ Bank the real cost numbers (closes M0/S3's residual)
+### A6 ☑ Bank the real cost numbers (closes M0/S3's residual)
 
 The M0 decision record priced storage from a **model**; the send receipts now give the
 real figure. For one 256 B-tier and one 4 KiB-tier message (`--pad 4096`), pull the
@@ -83,10 +105,17 @@ curl -s <rpc> -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,
 
 Write the numbers into [14-m0-decision-record.md](14-m0-decision-record.md) § S3.
 
-| Tier | tx hash | actual fee (STRK) |
-| --- | --- | --- |
-| 256 B | | |
-| 4 KiB | | |
+| Tier | tx hash | actual fee (STRK) | l1_data_gas | l2_gas |
+| --- | --- | --- | --- | --- |
+| 256 B | `0x2224a360cd80384332d0ead9d7f801e1d4142f40fd98e0814fb7a5302ff395` | **0.2076** | 1,152 | 6,032,160 |
+| 4 KiB | `0x32a7b35d2ebe87d12cb7c53110963e6c9cb89f3e5ae100f91b52292969afe91` | **2.3185** | 13,056 | 67,595,040 |
+
+> Measured 2026-09-04, Sepolia gas prices, direct mode (no pool wrapper, no proving fee).
+> **The M0 model's conclusion was right but its emphasis was wrong**: DA is indeed
+> negligible, but **L2 execution gas dominates** — ~93% of the fee is the per-felt storage
+> writes, scaling linearly with payload felts (4 KiB ≈ 11× the 256 B fee). At $0.027/STRK:
+> ~$0.006 per 256 B message, ~$0.063 per 4 KiB message, before pool/proving overhead.
+> Written back into [14-m0-decision-record.md](14-m0-decision-record.md) § S3.
 
 ---
 
@@ -166,9 +195,11 @@ recommendation. Direct submission stays available as the liveness fallback.
 
 | Item | Value |
 | --- | --- |
-| RPC (Sepolia) | `https://starknet-sepolia.drpc.org` |
+| RPC (Sepolia) | `https://api.cartridge.gg/x/starknet/sepolia` (drpc = flaky fallback) |
 | Toolchain | scarb 2.17.0 · snforge/sncast 0.63.0 · matches `starknet-privacy@bc75e4ba` |
-| Helper (Phase A) | *fill in at A4* |
+| Deployer account | `0x03ab7fda95f39c9b5be0572bd2a115db1bff1db87c88fbcff872473f1f2afac4` (sncast name: `deployer`) |
+| Class hash | `0x0096558250259ea6ed253261f660a81e2041f98b2151dc54177cf8a854b08612` |
+| Helper (Phase A) | `0x06409a4a8c1962bbfd6b04ea9ab1f745be8e7bceddc61f4e322dcbc7781ae032` (pool = deployer, dev only) |
 | Pool (full address) | *fill in at B1* |
 | Helper (Phase B) | *fill in at B6* |
 | Private key handling | `STRK20_MSG_PRIVATE_KEY` env only — never in config files or the repo |
