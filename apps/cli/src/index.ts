@@ -1,5 +1,13 @@
 #!/usr/bin/env node
-import { formatAge, readMessages, sendMessage } from "./commands.js";
+import {
+  flushOutbox,
+  formatAge,
+  listOutbox,
+  pay,
+  queueMessage,
+  readMessages,
+  sendMessage,
+} from "./commands.js";
 import { configDir, loadConfig, saveConfig, type CliConfig } from "./config.js";
 import type { Bucket } from "@strk20-messaging/sdk";
 
@@ -23,6 +31,10 @@ const USAGE = `msg — encrypted messaging over the STRK20 privacy pool
   msg channel add --label <name> --peer <addr> --key <channel key hex>
   msg channel list
   msg send --to <label|addr> [--pad 256|1024|4096] "text"
+  msg queue --to <label|addr> [--pad 256|1024|4096] "text"
+  msg outbox
+  msg flush [--max N]
+  msg pay --to <label|addr> --token <addr> --amount <wei> --memo "text"
   msg read
 
 Config lives in ${configDir()} (override with STRK20_MSG_HOME).
@@ -89,6 +101,63 @@ async function main(argv: string[]): Promise<number> {
         padTo: pad ? (Number(pad) as Bucket) : undefined,
         log: (l) => console.log(l),
       });
+      return 0;
+    }
+
+    case "queue": {
+      const to = flag(args, "to");
+      const pad = flag(args, "pad");
+      const [text] = positional(args);
+      if (!to || text === undefined) {
+        console.error('queue needs --to and the message text: msg queue --to bob "hello"');
+        return 2;
+      }
+      const entry = queueMessage(to, text, pad ? (Number(pad) as Bucket) : undefined);
+      console.log(`queued ${entry.id} · ${to}`);
+      return 0;
+    }
+
+    case "outbox": {
+      const items = listOutbox();
+      if (items.length === 0) {
+        console.log("outbox empty");
+        return 0;
+      }
+      const queued = items.filter((i) => i.entry.status === "queued");
+      for (const { entry, tier } of items) {
+        const tail = entry.txHash ? ` ${entry.txHash.slice(0, 12)}…` : "";
+        console.log(`${entry.status.padEnd(9)} ${entry.to.padEnd(12)} ${tier} B tier${tail}`);
+      }
+      if (queued.length > 0) {
+        console.log(`\n${queued.length} message(s) queued · one transaction on flush`);
+      }
+      return 0;
+    }
+
+    case "flush": {
+      const max = flag(args, "max");
+      const report = await flushOutbox({
+        max: max ? Number(max) : undefined,
+        log: (l) => console.log(l),
+      });
+      console.log(
+        report.flushed === 0
+          ? "nothing to flush"
+          : `flushed ${report.flushed} message(s) in ${report.transactions.length} transaction(s)`
+      );
+      return 0;
+    }
+
+    case "pay": {
+      const to = flag(args, "to");
+      const token = flag(args, "token");
+      const amount = flag(args, "amount");
+      const memo = flag(args, "memo");
+      if (!to || !token || !amount || !memo) {
+        console.error("pay needs --to, --token, --amount, --memo");
+        return 2;
+      }
+      await pay(to, token, BigInt(amount), memo, { log: (l) => console.log(l) });
       return 0;
     }
 

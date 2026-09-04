@@ -20,3 +20,12 @@ export {
   type Frame,
 } from "./framing.js";
 export { seal, open, openCiphertext, CT_LEN, type SealInput, type Sealed } from "./aead.js";
+export { privacyInvokeCalldata, calldataFeltCount, splitBatch } from "./calldata.js";
+export {
+  Outbox,
+  MemoryStore,
+  tierOf,
+  type OutboxEntry,
+  type OutboxStore,
+  type SendStatus,
+} from "./outbox.js";

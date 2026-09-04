@@ -5,9 +5,25 @@ Send and read encrypted messages filed under STRK20 channel keys.
 ```shell
 msg init --rpc <url> --helper <addr> --account <addr> [--mode direct|pool]
 msg channel add --label bob --peer 0x... --key 0x...
-msg send --to bob "hello"        # queued → (proving) → submitted → confirmed
+msg send --to bob "hello"        # immediate: queued → (proving) → submitted → confirmed
 msg read                          # [1] from 0xALICE · 2 min ago · "hello"
+
+# The outbox is the primary interaction (M4): accumulate, then flush as ONE
+# transaction per channel — one proof, one fee, N messages.
+msg queue --to bob "first"
+msg queue --to bob "second"
+msg outbox                        # queued/tier preview before spending anything
+msg flush                         # N messages · one InvokeExternal · one tx
+
+# A memo riding a transfer, atomically: if the transfer reverts, so does the memo.
+msg pay --to bob --token 0x... --amount 12345 --memo "invoice #1"
 ```
+
+Flush runs through the resilience loop ([src/resilience.ts](src/resilience.ts)): the
+proof-nonce cache is invalidated on every failure, `provingBlockId` (head − 10) is re-fetched
+on every attempt and between chained transactions, a proof-size failure falls back to a
+smaller batch (halving, remainder chained), and a slot conflict re-seals at fresh indices.
+Retries are bounded — a rejected proof never loops.
 
 Config in `~/.strk20-msg` (`STRK20_MSG_HOME` overrides — the e2e test uses two homes as
 "machine A" and "machine B"). Private key via `STRK20_MSG_PRIVATE_KEY`. Local state is

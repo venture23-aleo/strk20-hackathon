@@ -1,5 +1,6 @@
-import type { Sealed } from "@strk20-messaging/sdk";
 import type { RpcProvider } from "starknet";
+
+export { privacyInvokeCalldata } from "@strk20-messaging/sdk";
 
 /**
  * Read client for the message_anonymizer helper, and the calldata builder for
@@ -39,19 +40,6 @@ export class HelperClient {
     });
     return BigInt(res[0]!);
   }
-}
-
-/**
- * Serde for `privacy_invoke(messages: Span<EncryptedMessage>)`:
- * [count, (msg_id, ct_len, ...ct_felts)*] — the pool passes this through verbatim,
- * so direct mode and pool mode share it.
- */
-export function privacyInvokeCalldata(messages: Sealed[]): string[] {
-  const out: string[] = [toHex(BigInt(messages.length))];
-  for (const m of messages) {
-    out.push(toHex(m.msgId), toHex(BigInt(m.felts.length)), ...m.felts.map(toHex));
-  }
-  return out;
 }
 
 function toHex(v: bigint): string {

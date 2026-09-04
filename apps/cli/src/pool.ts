@@ -17,12 +17,24 @@ import { submitPool, type TailEvents } from "./tail.js";
  * NOT yet exercised against a live pool (needs the deployed pool address and a
  * funded, registered account) — first live run should watch the carrier step.
  */
+export interface PoolTransfer {
+  token: string;
+  recipient: string;
+  amount: bigint;
+}
+
 export async function poolSend(
   cfg: CliConfig,
   account: Account,
   provider: RpcProvider,
   sealed: Sealed[],
-  events: TailEvents & { onProving?: () => void } = {}
+  events: TailEvents & { onProving?: () => void } = {},
+  opts: {
+    /** A real private transfer riding the same action batch (memo case). */
+    transfer?: PoolTransfer;
+    /** Reuse a provingBlockId fetched by the resilience loop. */
+    provingBlockId?: number;
+  } = {}
 ) {
   const poolCfg = cfg.pool;
   if (!poolCfg) throw new Error("mode is 'pool' but config.pool is missing");
@@ -43,21 +55,29 @@ export async function poolSend(
     ...(poolCfg.provingUrl ? { provingUrl: poolCfg.provingUrl } : {}),
   });
 
-  const carrierToken = poolCfg.carrierToken;
-  if (!carrierToken) throw new Error("config.pool.carrierToken is required for the carrier note");
-
   // Prove at head − 10: notes mature 10 blocks; proving at head risks reorgs.
-  const provingBlockId = (await provider.getBlockNumber()) - 10;
+  const provingBlockId = opts.provingBlockId ?? (await provider.getBlockNumber()) - 10;
 
   events.onProving?.();
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  const builder = (transfers.build({ autoSetup: true }) as any)
+  let builder = transfers.build({ autoSetup: true }) as any;
+  if (opts.transfer) {
+    // Memo case: the real transfer's enc notes are the WriteOnce replay
+    // protection — no carrier needed. One action batch, atomic by construction.
+    const { token, recipient, amount } = opts.transfer;
+    builder = builder.with(token, (t: any) => t.transfer({ recipient, amount }));
+  } else {
+    const carrierToken = poolCfg.carrierToken;
+    if (!carrierToken) throw new Error("config.pool.carrierToken is required for the carrier note");
     // Replay-protection carrier: zero-amount enc note to self (free, unspendable).
-    .with(carrierToken, (t: any) => t.transfer({ recipient: account.address, amount: 0n }))
-    .invoke(() => ({
-      contractAddress: cfg.helperAddress,
-      calldata: CallData.compile(privacyInvokeCalldata(sealed)),
-    }));
+    builder = builder.with(carrierToken, (t: any) =>
+      t.transfer({ recipient: account.address, amount: 0n })
+    );
+  }
+  builder = builder.invoke(() => ({
+    contractAddress: cfg.helperAddress,
+    calldata: CallData.compile(privacyInvokeCalldata(sealed)),
+  }));
   const { callAndProof } = await builder.execute({ provingBlockId });
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
