@@ -1,3 +1,5 @@
 packages:
   - sdk
   - apps/*
+allowBuilds:
+  esbuild: true
