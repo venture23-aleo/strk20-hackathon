@@ -17,7 +17,23 @@ msg flush                         # N messages · one InvokeExternal · one tx
 
 # A memo riding a transfer, atomically: if the transfer reverts, so does the memo.
 msg pay --to bob --token 0x... --amount 12345 --memo "invoice #1"
+
+# Sync (M5): rebuild history from chain state alone, resumably.
+msg sync --full                   # a fresh client reconstructs everything
+msg history                       # full cached history, ordered per channel
+msg status                        # synced to block 1,284,332 · 20 message(s) · 5 s ago
 ```
+
+Sync walks every channel in batched `slot_lens` windows with concurrent payload reads,
+persists after every window through an atomic write (temp file + rename), and keys history by
+`(channel, index)` — so a scan killed at any point resumes with no gaps and no duplicates,
+and the `synced to block` watermark is the block observed before the scan began (never
+overstating what has been seen). Channel discovery via the Privacy SDK's `discoverChannels`
+is wired with cursor pagination in [src/channels.ts](src/channels.ts) — note the SDK factory's
+config path constructs its discovery provider **without** OHTTP, so we always construct
+`IndexerDiscoveryProvider` ourselves with `ohttp: true` as the default (opt-out is honored
+but warns). Live channel discovery needs pool mode plus `config.pool.discoveryUrl`; in direct
+mode channels are provisioned with `msg channel add`.
 
 Flush runs through the resilience loop ([src/resilience.ts](src/resilience.ts)): the
 proof-nonce cache is invalidated on every failure, `provingBlockId` (head − 10) is re-fetched

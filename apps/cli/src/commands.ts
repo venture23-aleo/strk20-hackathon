@@ -344,6 +344,64 @@ export async function pay(
   return { txHash, index };
 }
 
+// --- M5: sync, history, sync-state reporting -------------------------------
+
+import { SyncEngine, type HistoryRecord, type SlotReader } from "@strk20-messaging/sdk";
+import { FileSyncStore } from "./syncStore.js";
+
+function slotReader(helper: HelperClient, provider: RpcProvider): SlotReader {
+  return {
+    slotLens: (ids) => helper.slotLens(ids),
+    slots: (id) => helper.slots(id),
+    blockNumber: () => provider.getBlockNumber(),
+  };
+}
+
+function syncEngine(cfg: CliConfig): SyncEngine {
+  const { provider, helper } = clients(cfg);
+  return new SyncEngine(slotReader(helper, provider), new FileSyncStore());
+}
+
+/**
+ * Reconstruct history by walking every configured channel. `full` rescans from
+ * index 0 — with a fresh config dir this rebuilds everything the viewing key's
+ * channels ever received, from chain state alone.
+ */
+export async function syncNow(
+  opts: { full?: boolean; log?: (line: string) => void } = {}
+): Promise<{ syncedToBlock: number; found: number; totalMessages: number }> {
+  const log = opts.log ?? (() => {});
+  const cfg = loadConfig();
+  const engine = syncEngine(cfg);
+  const result = await engine.sync(
+    cfg.channels.map((c) => c.channelKey),
+    {
+      fromScratch: opts.full,
+      onWindow: (p) => log(`  ${labelFor(cfg, p.channelKey)} · scanned to index ${p.scannedTo} · ${p.found} found`),
+    }
+  );
+  log(`synced to block ${result.syncedToBlock} · ${result.totalMessages} message(s) known`);
+  return result;
+}
+
+export function syncStatus(): {
+  syncedToBlock: number | null;
+  updatedAt: number | null;
+  totalMessages: number;
+} {
+  return syncEngine(loadConfig()).status();
+}
+
+export function fullHistory(channelLabel?: string): HistoryRecord[] {
+  const cfg = loadConfig();
+  const key = channelLabel ? resolveChannel(cfg, channelLabel).channelKey : undefined;
+  return syncEngine(cfg).history(key);
+}
+
+function labelFor(cfg: CliConfig, channelKey: string): string {
+  return cfg.channels.find((c) => c.channelKey === channelKey)?.label ?? channelKey.slice(0, 10);
+}
+
 export function formatAge(timestamp: bigint): string {
   const s = Math.max(0, Math.floor(Date.now() / 1000) - Number(timestamp));
   if (s < 60) return `${s} s ago`;

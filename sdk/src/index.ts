@@ -29,3 +29,14 @@ export {
   type OutboxStore,
   type SendStatus,
 } from "./outbox.js";
+export {
+  SyncEngine,
+  MemorySyncStore,
+  emptySnapshot,
+  type HistoryRecord,
+  type SlotReader,
+  type SyncProgress,
+  type SyncResult,
+  type SyncSnapshot,
+  type SyncStore,
+} from "./sync.js";

@@ -2,11 +2,14 @@
 import {
   flushOutbox,
   formatAge,
+  fullHistory,
   listOutbox,
   pay,
   queueMessage,
   readMessages,
   sendMessage,
+  syncNow,
+  syncStatus,
 } from "./commands.js";
 import { configDir, loadConfig, saveConfig, type CliConfig } from "./config.js";
 import type { Bucket } from "@strk20-messaging/sdk";
@@ -36,6 +39,9 @@ const USAGE = `msg — encrypted messaging over the STRK20 privacy pool
   msg flush [--max N]
   msg pay --to <label|addr> --token <addr> --amount <wei> --memo "text"
   msg read
+  msg sync [--full]                 rebuild history by walking all channels
+  msg history [--channel <label>]   full cached history (run sync first)
+  msg status                        sync watermark: block reached, message count
 
 Config lives in ${configDir()} (override with STRK20_MSG_HOME).
 Private key: env STRK20_MSG_PRIVATE_KEY, or account.privateKey in config.json.`;
@@ -158,6 +164,41 @@ async function main(argv: string[]): Promise<number> {
         return 2;
       }
       await pay(to, token, BigInt(amount), memo, { log: (l) => console.log(l) });
+      return 0;
+    }
+
+    case "sync": {
+      const report = await syncNow({
+        full: args.includes("--full"),
+        log: (l) => console.log(l),
+      });
+      void report;
+      return 0;
+    }
+
+    case "history": {
+      const records = fullHistory(flag(args, "channel"));
+      if (records.length === 0) {
+        console.log("no history — run: msg sync");
+        return 0;
+      }
+      let n = 0;
+      for (const r of records) {
+        n++;
+        const body = Buffer.from(r.bodyBase64, "base64").toString("utf8");
+        console.log(`[${n}] from ${r.sender} · ${formatAge(BigInt(r.timestamp))} · "${body}"`);
+      }
+      return 0;
+    }
+
+    case "status": {
+      const s = syncStatus();
+      if (s.syncedToBlock === null) {
+        console.log("never synced — run: msg sync");
+        return 0;
+      }
+      const age = s.updatedAt ? `${Math.round((Date.now() - s.updatedAt) / 1000)} s ago` : "";
+      console.log(`synced to block ${s.syncedToBlock} · ${s.totalMessages} message(s) · ${age}`);
       return 0;
     }
 
