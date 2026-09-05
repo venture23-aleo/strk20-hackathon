@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SEPOLIA_PRESET, isHex, parseCredentialsPaste, probeConnection } from "../lib/presets.js";
 import { store } from "../lib/store.js";
+import { shorten } from "./Onboarding.js";
 
 /** Mode switcher + direct-mode connection details, with presets and a probe. */
 function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
@@ -16,6 +17,28 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
   const [pasteNote, setPasteNote] = useState<string | null>(null);
   const [probe, setProbe] = useState<{ ok: boolean; detail: string } | "checking" | null>(null);
   const [saved, setSaved] = useState(false);
+  const [keyPub, setKeyPub] = useState<string | null>(null);
+
+  // Live: which keypair is actually in the field? Derived locally, never sent.
+  useEffect(() => {
+    let cancelled = false;
+    const k = key.trim();
+    if (!isHex(k) || k.length < 20) {
+      setKeyPub(null);
+      return;
+    }
+    void import("starknet").then(({ ec }) => {
+      if (cancelled) return;
+      try {
+        setKeyPub(ec.starkCurve.getStarkKey(k));
+      } catch {
+        setKeyPub(null);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
 
   const applyPreset = () => {
     setRpcUrl(SEPOLIA_PRESET.rpcUrl);
@@ -70,8 +93,22 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
     }, 900);
   };
 
+  const current = store.config!;
   return (
     <div>
+      <p className="connected-now">
+        Connected now: <strong>{current.mode}</strong>
+        {current.mode === "direct" && (
+          <>
+            {" "}· signer{" "}
+            <code title={current.accountAddress}>{shorten(current.accountAddress)}</code> · you
+            are{" "}
+            <code title={current.identityAddress || current.accountAddress}>
+              {shorten(current.identityAddress || current.accountAddress)}
+            </code>
+          </>
+        )}
+      </p>
       <div className="mode-picker">
         {(
           [
@@ -146,6 +183,12 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
                 {showKey ? "hide" : "show"}
               </button>
             </span>
+            {keyPub && (
+              <span className="hint">
+                this key's public key: <code>{shorten(keyPub)}</code> — match it against{" "}
+                <code>public_key</code> in your sncast file to see whose key this is
+              </span>
+            )}
           </label>
 
           <label className="field">

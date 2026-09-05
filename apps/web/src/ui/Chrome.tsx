@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { store } from "../lib/store.js";
+import { shorten } from "./Onboarding.js";
 
 /**
  * Sync state is first-class chrome (12-client-and-ui.md): a stale view renders
@@ -26,6 +27,14 @@ export function Chrome({ onSettings }: { onSettings: () => void }) {
   return (
     <header className="chrome">
       <div className="brand">STRK20 Messages</div>
+      <span
+        className="id-chip"
+        title={`your messaging identity: ${store.identity}${
+          store.config?.identityAddress ? ` · signer: ${store.config.accountAddress}` : " (also the signer)"
+        }`}
+      >
+        you: <code>{shorten(store.identity)}</code>
+      </span>
       <button
         className={`sync ${store.syncing ? "busy" : ""}`}
         onClick={() => void store.syncNow()}
