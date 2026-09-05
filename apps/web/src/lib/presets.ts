@@ -152,9 +152,11 @@ export async function probeConnection(
           return {
             ok: false,
             detail:
-              "that private key does not control this account — its public key doesn't match " +
-              "the account's. If you pasted an sncast file with several accounts, make sure the " +
-              "key belongs to the address above (sends would fail with “invalid signature”).",
+              "this key belongs to a different account than the address above — sends would " +
+              "fail with “invalid signature”. Fix: paste the sncast file (it picks the key " +
+              "matching this address). If you're trying to BE a different person in this " +
+              "browser, keep this account and key as they are and put the other address in " +
+              "“Messaging identity” below instead — the signer and your identity are separate.",
           };
         }
         return { ok: true, detail: "helper found · pool() matches · key controls the account · ready to send" };
