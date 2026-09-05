@@ -1,0 +1,437 @@
+<title>How a Message Crosses Sepolia</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #f7f8f5;
+    --panel: #ffffff;
+    --ink: #1d232b;
+    --muted: #5d6874;
+    --line: #d9ded9;
+    --cipher: #177a48;
+    --cipher-soft: #e2f1e7;
+    --public: #a8670a;
+    --public-soft: #f7ecd9;
+    --link: #3556c8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14181d;
+      --panel: #1b2128;
+      --ink: #e6e9ea;
+      --muted: #98a2ab;
+      --line: #313a42;
+      --cipher: #52c58b;
+      --cipher-soft: #14301f;
+      --public: #d9a144;
+      --public-soft: #33270f;
+      --link: #8ba3f2;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14181d;
+    --panel: #1b2128;
+    --ink: #e6e9ea;
+    --muted: #98a2ab;
+    --line: #313a42;
+    --cipher: #52c58b;
+    --cipher-soft: #14301f;
+    --public: #d9a144;
+    --public-soft: #33270f;
+    --link: #8ba3f2;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    margin: 0;
+    padding: 48px 20px 72px;
+  }
+  main { max-width: 900px; margin: 0 auto; }
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.86em;
+  }
+  a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  header.page { margin-bottom: 40px; }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 42px);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .lede { font-size: 18px; color: var(--muted); max-width: 62ch; margin: 0; }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 52px 0 6px;
+    text-wrap: balance;
+  }
+  h2 + p.sub { color: var(--muted); margin: 0 0 18px; max-width: 68ch; }
+  p { max-width: 68ch; }
+
+  /* legend */
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 18px 0 10px; font-size: 13.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+  .swatch.cipher { background: var(--cipher); }
+  .swatch.public { background: var(--public); }
+  .swatch.local { background: transparent; border: 1.6px solid var(--ink); }
+
+  figure { margin: 0 0 8px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-frame {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 14px 10px;
+    overflow-x: auto;
+  }
+  figcaption { font-size: 13.5px; color: var(--muted); margin-top: 10px; max-width: 74ch; }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px; }
+  @media (max-width: 700px) { .steps { grid-template-columns: 1fr; } }
+  .steps section {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 22px 14px;
+  }
+  .steps h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+  .steps .where { font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .steps ol { margin: 12px 0 6px; padding-left: 20px; }
+  .steps li { margin: 9px 0; }
+  .steps li strong { font-weight: 600; }
+  .tag { font-family: "IBM Plex Mono", monospace; font-size: 0.82em; background: var(--cipher-soft); color: var(--cipher); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+  .tag.pub { background: var(--public-soft); color: var(--public); }
+
+  /* crypto table */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 660px; }
+  th, td { text-align: left; padding: 11px 16px; vertical-align: top; }
+  thead th {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line);
+  }
+  tbody tr + tr td { border-top: 1px solid var(--line); }
+  td.prim { font-weight: 600; white-space: nowrap; }
+  td .mono { color: var(--muted); }
+
+  /* visibility strip */
+  .who { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+  @media (max-width: 700px) { .who { grid-template-columns: 1fr; } }
+  .who div {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+    padding: 14px 16px;
+  }
+  .who h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+  .who ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  .who li { margin: 5px 0; }
+  .who .none { color: var(--muted); font-style: italic; }
+
+  footer.meta {
+    margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted);
+  }
+  footer.meta .mono { word-break: break-all; }
+</style>
+
+<main>
+  <header class="page">
+    <p class="eyebrow">STRK20 Messaging · current architecture (direct mode, Sepolia)</p>
+    <h1>How a Message Crosses Sepolia</h1>
+    <p class="lede">
+      There is no server, relay, or connection between the two people. The sender encrypts in
+      the browser and writes ciphertext into a contract's permanent storage; the receiver
+      independently computes where to look, reads it back over RPC, and decrypts locally.
+      The blockchain is the only channel.
+    </p>
+  </header>
+
+  <div class="legend">
+    <span><i class="swatch cipher"></i> protected by the channel key — secret</span>
+    <span><i class="swatch public"></i> visible to everyone on-chain</span>
+    <span><i class="swatch local"></i> computed locally in the browser</span>
+  </div>
+
+  <figure>
+    <div class="fig-frame">
+    <svg viewBox="0 0 1140 486" role="img" aria-label="End-to-end flow: the sender's browser frames, encrypts and signs a message, one transaction stores ciphertext in the MessageAnonymizer contract on Sepolia, and the receiver's browser polls the chain over RPC, reads the ciphertext felts and decrypts them locally. A crossed-out arc shows there is no direct connection between the browsers." style="min-width:900px">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+        <marker id="arrC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--cipher)"/>
+        </marker>
+      </defs>
+
+      <!-- ===== sender browser ===== -->
+      <rect x="16" y="44" width="284" height="356" rx="10" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="32" y="70" font-size="14" font-weight="600" fill="currentColor">Sender's browser</text>
+      <text x="32" y="87" font-size="11.5" fill="var(--muted)">e.g. Brave · @strk20-messaging/sdk</text>
+
+      <rect x="36" y="102" width="244" height="36" rx="6" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <text x="158" y="124" font-size="12.5" text-anchor="middle" fill="currentColor">“hello from Sepolia”  · plaintext</text>
+
+      <line x1="158" y1="138" x2="158" y2="152" stroke="currentColor" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <rect x="36" y="154" width="244" height="36" rx="6" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <text x="158" y="176" font-size="12.5" text-anchor="middle" fill="currentColor">frame + zero-pad → 256 B tier</text>
+
+      <line x1="158" y1="190" x2="158" y2="204" stroke="currentColor" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <rect x="36" y="206" width="244" height="44" rx="6" fill="var(--cipher-soft)" stroke="var(--cipher)" stroke-width="1.3"/>
+      <text x="158" y="224" font-size="12" text-anchor="middle" fill="var(--cipher)" font-family="IBM Plex Mono, monospace">msg_id = Poseidon(tag, ck, N)</text>
+      <text x="158" y="240" font-size="12" text-anchor="middle" fill="var(--cipher)" font-family="IBM Plex Mono, monospace">key_N = Poseidon(tag', ck, N)</text>
+
+      <line x1="158" y1="250" x2="158" y2="264" stroke="currentColor" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <rect x="36" y="266" width="244" height="36" rx="6" fill="var(--cipher-soft)" stroke="var(--cipher)" stroke-width="1.3"/>
+      <text x="158" y="288" font-size="12.5" text-anchor="middle" fill="var(--cipher)">ChaCha20-Poly1305 → 9 felts</text>
+
+      <line x1="158" y1="302" x2="158" y2="316" stroke="currentColor" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <rect x="36" y="318" width="244" height="36" rx="6" fill="none" stroke="var(--public)" stroke-width="1.3"/>
+      <text x="158" y="340" font-size="12.5" text-anchor="middle" fill="var(--public)">sign transaction · ECDSA (account key)</text>
+
+      <text x="158" y="376" font-size="11.5" text-anchor="middle" fill="var(--public)">submitter address is public in direct mode</text>
+
+      <!-- ===== tx arrow to chain ===== -->
+      <line x1="300" y1="336" x2="438" y2="336" stroke="currentColor" stroke-width="1.4" marker-end="url(#arr)"/>
+      <text x="369" y="322" font-size="11.5" text-anchor="middle" fill="currentColor" font-family="IBM Plex Mono, monospace">INVOKE privacy_invoke</text>
+      <text x="369" y="354" font-size="11.5" text-anchor="middle" fill="var(--public)">fee 0.2076 STRK</text>
+
+      <!-- ===== chain ===== -->
+      <rect x="440" y="120" width="262" height="280" rx="10" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <text x="571" y="148" font-size="14" font-weight="600" text-anchor="middle" fill="currentColor">Starknet Sepolia</text>
+      <text x="571" y="166" font-size="11" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono, monospace">MessageAnonymizer 0x06409a…e032</text>
+
+      <!-- locker grid: 5 x 3 -->
+      <g stroke="currentColor" stroke-width="1" fill="none">
+        <rect x="466" y="188" width="40" height="30" rx="3"/>
+        <rect x="514" y="188" width="40" height="30" rx="3"/>
+        <rect x="562" y="188" width="40" height="30" rx="3" fill="var(--cipher-soft)" stroke="var(--cipher)" stroke-width="1.6"/>
+        <rect x="610" y="188" width="40" height="30" rx="3"/>
+        <rect x="658" y="188" width="40" height="30" rx="3"/>
+        <rect x="466" y="226" width="40" height="30" rx="3"/>
+        <rect x="514" y="226" width="40" height="30" rx="3"/>
+        <rect x="562" y="226" width="40" height="30" rx="3"/>
+        <rect x="610" y="226" width="40" height="30" rx="3"/>
+        <rect x="658" y="226" width="40" height="30" rx="3"/>
+        <rect x="466" y="264" width="40" height="30" rx="3"/>
+        <rect x="514" y="264" width="40" height="30" rx="3"/>
+        <rect x="562" y="264" width="40" height="30" rx="3"/>
+        <rect x="610" y="264" width="40" height="30" rx="3"/>
+        <rect x="658" y="264" width="40" height="30" rx="3"/>
+      </g>
+      <text x="582" y="208" font-size="11" fill="var(--cipher)" font-family="IBM Plex Mono, monospace" text-anchor="middle">⬤</text>
+      <text x="582" y="182" font-size="10" fill="var(--cipher)" font-family="IBM Plex Mono, monospace" text-anchor="middle">msg_id</text>
+      <text x="571" y="318" font-size="11.5" text-anchor="middle" fill="currentColor">WriteOnce storage slots</text>
+      <text x="571" y="334" font-size="11.5" text-anchor="middle" fill="var(--muted)">written once · never edited · never deleted</text>
+      <text x="571" y="356" font-size="11" text-anchor="middle" fill="var(--public)">size tier + time of write are public</text>
+      <text x="571" y="372" font-size="11" text-anchor="middle" fill="var(--cipher)">contents: opaque without the channel key</text>
+
+      <!-- ===== poll + read arrows ===== -->
+      <line x1="838" y1="196" x2="704" y2="196" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+      <text x="771" y="184" font-size="11.5" text-anchor="middle" fill="currentColor" font-family="IBM Plex Mono, monospace">slot_lens · poll 15 s</text>
+
+      <line x1="704" y1="252" x2="838" y2="252" stroke="var(--cipher)" stroke-width="1.5" marker-end="url(#arrC)"/>
+      <text x="771" y="240" font-size="11.5" text-anchor="middle" fill="var(--cipher)">9 ciphertext felts</text>
+      <text x="771" y="268" font-size="11" text-anchor="middle" fill="var(--muted)">any public RPC node</text>
+
+      <!-- ===== receiver browser ===== -->
+      <rect x="840" y="44" width="284" height="356" rx="10" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="856" y="70" font-size="14" font-weight="600" fill="currentColor">Receiver's browser</text>
+      <text x="856" y="87" font-size="11.5" fill="var(--muted)">e.g. Safari · same channel key (from the invite)</text>
+
+      <rect x="860" y="102" width="244" height="36" rx="6" fill="var(--cipher-soft)" stroke="var(--cipher)" stroke-width="1.3"/>
+      <text x="982" y="124" font-size="12" text-anchor="middle" fill="var(--cipher)" font-family="IBM Plex Mono, monospace">derive msg_id for N = 0,1,2…</text>
+
+      <line x1="982" y1="138" x2="982" y2="152" stroke="currentColor" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <rect x="860" y="154" width="244" height="36" rx="6" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="5 4"/>
+      <text x="982" y="176" font-size="12.5" text-anchor="middle" fill="currentColor">walk slots until the first empty one</text>
+
+      <line x1="982" y1="190" x2="982" y2="204" stroke="currentColor" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <rect x="860" y="206" width="244" height="36" rx="6" fill="var(--cipher-soft)" stroke="var(--cipher)" stroke-width="1.3"/>
+      <text x="982" y="228" font-size="12.5" text-anchor="middle" fill="var(--cipher)">derive key_N · verify seal · decrypt</text>
+
+      <line x1="982" y1="242" x2="982" y2="256" stroke="currentColor" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <rect x="860" y="258" width="244" height="36" rx="6" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <text x="982" y="280" font-size="12.5" text-anchor="middle" fill="currentColor">“hello from Sepolia” · in the thread</text>
+
+      <text x="982" y="330" font-size="11.5" text-anchor="middle" fill="var(--muted)">tampered or misplaced ciphertext</text>
+      <text x="982" y="346" font-size="11.5" text-anchor="middle" fill="var(--muted)">fails the Poly1305 check and is rejected</text>
+
+      <!-- ===== no direct connection ===== -->
+      <path d="M 158 402 C 158 462, 982 462, 982 402" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="6 5"/>
+      <line x1="558" y1="434" x2="582" y2="458" stroke="var(--muted)" stroke-width="1.6"/>
+      <line x1="582" y1="434" x2="558" y2="458" stroke="var(--muted)" stroke-width="1.6"/>
+      <text x="570" y="480" font-size="12" text-anchor="middle" fill="var(--muted)">no server, no relay, no direct connection — the chain is the only channel</text>
+    </svg>
+    </div>
+    <figcaption>
+      One real message, end to end. Green stages are governed by the shared channel key and
+      never leave the browsers in readable form; amber facts — submitter, fee, size tier,
+      timestamp — are what the public chain necessarily records.
+    </figcaption>
+  </figure>
+
+  <h2>The two halves, step by step</h2>
+  <p class="sub">These are sequences — each step feeds the next.</p>
+  <div class="steps">
+    <section>
+      <h3>Sending</h3>
+      <p class="where">In the sender's browser, then one transaction</p>
+      <ol>
+        <li><strong>Address the locker.</strong> Message #N goes to slot <span class="tag">msg_id&nbsp;=&nbsp;Poseidon(STRK20_MSG_ID:V1,&nbsp;ck,&nbsp;N)</span> — random-looking to anyone without the channel key <code>ck</code>.</li>
+        <li><strong>Derive a one-time key.</strong> <span class="tag">key_N&nbsp;=&nbsp;Poseidon(STRK20_MSG_KEY:V1,&nbsp;ck,&nbsp;N)</span>. Fresh per message; never stored, never sent.</li>
+        <li><strong>Frame and pad</strong> to a fixed tier (256 B / 1 KiB / 4 KiB) so only the size class leaks.</li>
+        <li><strong>Encrypt + seal</strong> with ChaCha20-Poly1305; the slot address is baked into the seal, so ciphertext can't be replayed elsewhere.</li>
+        <li><strong>Sign and submit</strong> one transaction calling <code>privacy_invoke</code> on the helper. The account key's only job — <span class="tag pub">fee&nbsp;0.2076&nbsp;STRK</span> for this tier, confirmed in ~10–30&nbsp;s.</li>
+      </ol>
+    </section>
+    <section>
+      <h3>Receiving</h3>
+      <p class="where">In the receiver's browser, every 15 seconds</p>
+      <ol>
+        <li><strong>Compute the same addresses</strong> from the shared channel key: slots for N = 0, 1, 2, …</li>
+        <li><strong>Ask any RPC node</strong> which are occupied — one batched <code>slot_lens</code> call covers 16 slots; stop at the first empty one.</li>
+        <li><strong>Fetch and decrypt locally.</strong> Read the felts, derive the same <code>key_N</code>, verify the Poly1305 seal, unframe → sender, time, text.</li>
+        <li><strong>Rebuildable from zero.</strong> A new device with just the keys replays this walk from N = 0 and recovers the whole history — backups hold keys, not messages.</li>
+      </ol>
+    </section>
+  </div>
+
+  <h2>The cryptography</h2>
+  <p class="sub">Four primitives, each with one job.</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Primitive</th><th>Job</th><th>Why this one</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="prim">Poseidon hash</td>
+          <td>Slot addresses and per-message keys, from <code>channel_key + counter</code></td>
+          <td>Starknet's native hash — and the same construction the STRK20 pool uses for its own slots, so message slots are indistinguishable from payment slots</td>
+        </tr>
+        <tr>
+          <td class="prim">ChaCha20-Poly1305</td>
+          <td>Encrypts the body and seals it against tampering</td>
+          <td>Fast in every browser with no special hardware. The fixed zero nonce is safe <em>only</em> because every message's key is unique — a property the test suite proves</td>
+        </tr>
+        <tr>
+          <td class="prim">ECDSA <span class="mono">(STARK curve)</span></td>
+          <td>Signs the transaction; pays the fee</td>
+          <td>Standard Starknet account signing. Contributes nothing to secrecy — losing it risks funds, not past messages</td>
+        </tr>
+        <tr>
+          <td class="prim">Fixed-size padding</td>
+          <td>Hides true message length</td>
+          <td>Observers see a tier, not a length; the compose box warns before a draft crosses into a pricier tier</td>
+        </tr>
+        <tr>
+          <td class="prim">STARK proofs <span class="mono">(Phase B)</span></td>
+          <td>Will detach the sender's identity from the transaction</td>
+          <td>The message is submitted through the STRK20 privacy pool instead of directly — the one thing today's direct mode doesn't hide</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Who sees what</h2>
+  <div class="who">
+    <div>
+      <h3>The recipient</h3>
+      <ul>
+        <li>Everything — text, sender, time</li>
+        <li>With proof it's authentic and untampered (the seal)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>A chain observer</h3>
+      <ul>
+        <li>~272 opaque numbers stored at a random-looking address, at a time, for a fee</li>
+        <li>In direct mode: the submitting account</li>
+        <li>Never: the text, the recipient, or that it's a “message” at all</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Any server of ours</h3>
+      <ul>
+        <li class="none">Nothing — there is no server</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>What Phase B changes — and what it doesn't</h2>
+  <p class="sub">The seal, the storage, and the receiver's walk stay identical. Only the caller changes.</p>
+  <figure>
+    <div class="fig-frame">
+    <svg viewBox="0 0 760 190" role="img" aria-label="Comparison: today the user's account calls the helper directly and is publicly visible as the caller; in Phase B the user proves a transaction to the STRK20 pool with a STARK proof and the pool calls the helper, hiding the sender." style="min-width:620px">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <text x="20" y="34" font-size="13" font-weight="600" fill="currentColor">Today · direct mode</text>
+      <rect x="20" y="46" width="180" height="40" rx="7" fill="none" stroke="var(--public)" stroke-width="1.4"/>
+      <text x="110" y="66" font-size="12" text-anchor="middle" fill="var(--public)">your account</text>
+      <text x="110" y="80" font-size="10.5" text-anchor="middle" fill="var(--public)" font-family="IBM Plex Mono, monospace">0x03ab7f… — visible</text>
+      <line x1="200" y1="66" x2="556" y2="66" stroke="var(--public)" stroke-width="1.3" marker-end="url(#arr2)"/>
+      <text x="378" y="56" font-size="11.5" text-anchor="middle" fill="var(--public)">calls privacy_invoke · signed openly</text>
+      <rect x="558" y="46" width="180" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="648" y="70" font-size="12" text-anchor="middle" fill="currentColor">helper stores ciphertext</text>
+
+      <text x="20" y="126" font-size="13" font-weight="600" fill="currentColor">Phase B · pool mode</text>
+      <rect x="20" y="138" width="130" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="85" y="162" font-size="12" text-anchor="middle" fill="currentColor">you</text>
+      <line x1="150" y1="158" x2="308" y2="158" stroke="var(--cipher)" stroke-width="1.4" marker-end="url(#arr2)"/>
+      <text x="229" y="148" font-size="11.5" text-anchor="middle" fill="var(--cipher)">STARK proof</text>
+      <rect x="310" y="138" width="150" height="40" rx="7" fill="var(--cipher-soft)" stroke="var(--cipher)" stroke-width="1.4"/>
+      <text x="385" y="162" font-size="12" text-anchor="middle" fill="var(--cipher)">STRK20 pool</text>
+      <line x1="460" y1="158" x2="556" y2="158" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr2)"/>
+      <text x="508" y="148" font-size="11.5" text-anchor="middle" fill="currentColor">calls as itself</text>
+      <rect x="558" y="138" width="180" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="648" y="162" font-size="12" text-anchor="middle" fill="currentColor">same helper, same storage</text>
+    </svg>
+    </div>
+    <figcaption>
+      Phase B swaps who appears as the caller: the pool, backed by a ~29&nbsp;s STARK proof,
+      instead of your visible account. Everything downstream — encryption, slots, polling,
+      decryption — is already the production path.
+    </figcaption>
+  </figure>
+
+  <footer class="meta">
+    <p style="max-width:none">
+      Live on Starknet Sepolia ·
+      helper <a href="https://sepolia.voyager.online/contract/0x06409a4a8c1962bbfd6b04ea9ab1f745be8e7bceddc61f4e322dcbc7781ae032"><span class="mono">0x06409a…e032</span></a>
+      · first message tx <a href="https://sepolia.voyager.online/tx/0x2224a360cd80384332d0ead9d7f801e1d4142f40fd98e0814fb7a5302ff395"><span class="mono">0x2224a3…f395</span></a>
+      · fees measured 2026-09-04 (256 B → 0.2076 STRK, 4 KiB → 2.3185 STRK; ~93% is L2 execution gas)
+      · poll interval 15 s · domain tags <span class="mono">STRK20_MSG_ID:V1</span> / <span class="mono">STRK20_MSG_KEY:V1</span>
+    </p>
+  </footer>
+</main>
