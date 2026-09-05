@@ -125,6 +125,37 @@ describe("invite — pairing two clients onto the same lanes", () => {
   });
 });
 
+describe("credentials paste — multi-account sncast files", () => {
+  const sncast = JSON.stringify({
+    "alpha-sepolia": {
+      deployer: { address: "0x03ab7fda95", private_key: "0xdeb107e4", public_key: "0x1" },
+      safari: { address: "0x07b08b08fd", private_key: "0x5afa41c0de", public_key: "0x2" },
+    },
+  });
+
+  it("prefers the account matching the current address field", async () => {
+    const { parseCredentialsPaste } = await import("../src/lib/presets.js");
+    const creds = parseCredentialsPaste(sncast, "0x3ab7fda95")!; // no leading zero — BigInt compare
+    expect(creds.accountAddress).toBe("0x03ab7fda95");
+    expect(creds.privateKey).toBe("0xdeb107e4");
+    expect(creds.source).toContain("deployer");
+    expect(creds.source).toContain("2");
+  });
+
+  it("names which account it took when nothing matches", async () => {
+    const { parseCredentialsPaste } = await import("../src/lib/presets.js");
+    const creds = parseCredentialsPaste(sncast, "0x999")!;
+    expect(creds.source).toContain("deployer"); // first entry, named
+  });
+
+  it("a bare key fills only the key", async () => {
+    const { parseCredentialsPaste } = await import("../src/lib/presets.js");
+    const creds = parseCredentialsPaste("0x" + "ab".repeat(30))!;
+    expect(creds.privateKey).toBeDefined();
+    expect(creds.accountAddress).toBe("");
+  });
+});
+
 describe("groups — lanes, invites, stitching", () => {
   const GK = "0x5a0aa03c5d8649895810c86ed63b62d91895734e6d3ab2e80ada6f6fb400c84";
   const group = {

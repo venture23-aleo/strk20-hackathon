@@ -22,10 +22,15 @@ export const isHex = (v: string): boolean => /^0x[0-9a-fA-F]+$/.test(v.trim());
 
 /**
  * Accepts either an sncast accounts file (~/.starknet_accounts/…json) or this
- * app's own backup JSON, and extracts { accountAddress, privateKey? }.
+ * app's own backup JSON, and extracts { accountAddress, privateKey? }. When the
+ * file holds several accounts, the one matching `preferAddress` wins (so a
+ * preset-filled address keeps its OWN key), otherwise the first — and the
+ * source names which account was taken, because address/key mismatches fail
+ * later as an opaque "invalid signature".
  */
 export function parseCredentialsPaste(
-  text: string
+  text: string,
+  preferAddress?: string
 ): { accountAddress: string; privateKey?: string; source: string } | null {
   let raw: unknown;
   try {
@@ -44,30 +49,49 @@ export function parseCredentialsPaste(
   }
 
   // sncast: { "<network>": { "<name>": { address, private_key, ... } } }
+  const found: { name: string; address: string; privateKey: string }[] = [];
   for (const network of Object.values(obj)) {
     if (typeof network !== "object" || network === null) continue;
-    for (const acct of Object.values(network as Record<string, unknown>)) {
+    for (const [name, acct] of Object.entries(network as Record<string, unknown>)) {
       const a = acct as { address?: string; private_key?: string };
       if (typeof a?.address === "string" && typeof a?.private_key === "string") {
-        return { accountAddress: a.address, privateKey: a.private_key, source: "sncast accounts file" };
+        found.push({ name, address: a.address, privateKey: a.private_key });
       }
     }
   }
-  return null;
+  if (found.length === 0) return null;
+  const preferred =
+    (preferAddress &&
+      isHex(preferAddress) &&
+      found.find((f) => BigInt(f.address) === BigInt(preferAddress))) ||
+    found[0]!;
+  return {
+    accountAddress: preferred.address,
+    privateKey: preferred.privateKey,
+    source: `sncast account “${preferred.name}”${found.length > 1 ? ` (file holds ${found.length})` : ""}`,
+  };
 }
 
 const POOL_SELECTOR = "0x35b2940ca10a9581573918a0d9ed2422f97cc9196f63510c77f5a0ed5393cfd";
+const GET_PUBLIC_KEY_SELECTOR = "0x1a35984e05126dbecb7c3bb9929e7dd9106d460c59b1633739a5c733a5fb13b";
 
 export interface ProbeResult {
   ok: boolean;
   detail: string;
 }
 
-/** Verify RPC reachability + that a MessageAnonymizer lives at the helper address. */
+/**
+ * Verify RPC reachability, that a MessageAnonymizer lives at the helper
+ * address, that its pool is the given account — and, when a key is provided,
+ * that the key actually CONTROLS that account (derived public key vs the
+ * account contract's get_public_key), so an address/key mix-up surfaces here
+ * instead of as "Account: invalid signature" at send time.
+ */
 export async function probeConnection(
   rpcUrl: string,
   helperAddress: string,
-  accountAddress: string
+  accountAddress: string,
+  accountKey?: string
 ): Promise<ProbeResult> {
   let res: { result?: string[]; error?: { message?: string } };
   try {
@@ -102,6 +126,42 @@ export async function probeConnection(
         `helper found, but its pool is 0x${pool.toString(16).slice(0, 8)}… — not your account. ` +
         "Direct mode can only write through the helper's registered pool account.",
     };
+  }
+  if (accountKey && isHex(accountKey) && isHex(accountAddress)) {
+    try {
+      const [{ ec }, keyRes] = await Promise.all([
+        import("starknet"),
+        fetch(rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 2,
+            method: "starknet_call",
+            params: [
+              { contract_address: accountAddress, entry_point_selector: GET_PUBLIC_KEY_SELECTOR, calldata: [] },
+              "latest",
+            ],
+          }),
+        }).then((r) => r.json() as Promise<{ result?: string[] }>),
+      ]);
+      const onChain = keyRes.result?.[0];
+      if (onChain) {
+        const derived = BigInt(ec.starkCurve.getStarkKey(accountKey));
+        if (derived !== BigInt(onChain)) {
+          return {
+            ok: false,
+            detail:
+              "that private key does not control this account — its public key doesn't match " +
+              "the account's. If you pasted an sncast file with several accounts, make sure the " +
+              "key belongs to the address above (sends would fail with “invalid signature”).",
+          };
+        }
+        return { ok: true, detail: "helper found · pool() matches · key controls the account · ready to send" };
+      }
+    } catch {
+      /* key check is best-effort; fall through to the basic OK */
+    }
   }
   return { ok: true, detail: "helper found · pool() matches your account · ready to send" };
 }

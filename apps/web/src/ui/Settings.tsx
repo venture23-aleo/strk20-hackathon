@@ -25,7 +25,7 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
   };
 
   const applyPaste = (text: string) => {
-    const creds = parseCredentialsPaste(text);
+    const creds = parseCredentialsPaste(text, account);
     if (!creds) {
       setPasteNote("Couldn't recognize that — paste your sncast accounts JSON, an app backup, or a bare 0x… key.");
       return;
@@ -39,7 +39,7 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
 
   const runProbe = async () => {
     setProbe("checking");
-    setProbe(await probeConnection(rpcUrl.trim(), helper.trim(), account.trim()));
+    setProbe(await probeConnection(rpcUrl.trim(), helper.trim(), account.trim(), key.trim() || undefined));
   };
 
   const fieldOk = {

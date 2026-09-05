@@ -310,6 +310,11 @@ export class AppStore {
         if (contact) this.backend!.demo?.scheduleReply(contact, () => void this.syncNow());
       }
     } catch (err) {
+      // A failed batch goes BACK to queued — retryable, never stuck in
+      // "proving"/"submitted" limbo. (WriteOnce slots make an accidental
+      // double-send self-defeating anyway: a re-flush re-walks the indices.)
+      const stuck = [...this.outbox.list("proving"), ...this.outbox.list("submitted")].map((e) => e.id);
+      if (stuck.length) this.outbox.mark(stuck, "queued");
       this.flush = { phase: "failed", error: err instanceof Error ? err.message : String(err) };
       this.notify();
     }
