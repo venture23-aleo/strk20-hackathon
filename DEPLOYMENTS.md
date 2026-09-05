@@ -30,7 +30,7 @@ same commit as any deployment. Explorer: prefix addresses/txs with `https://sepo
 
 | Contract | Address | Note |
 | --- | --- | --- |
-| STRK20 pool | `0x0254a6b2…e0d91` **(truncated — full address unknown, Phase B blocker B1)** | |
+| **STRK20 pool** | `0x254a6b2997ef52e9f830ce1f543f6b29768295e8d17e2267d672c552cfe0d91` | **Full address recovered 2026-09-05** by scanning Sepolia for the pool's `ViewingKeySet` events; active. Class `0x7e2bbd7ccc1e68b2695caef70aeb2a3be6cd017b5d5159278ba08f2d8de33f` (differs from mainnet's — older deployment) |
 | STRK fee token | `0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d` | |
 | ETH token | `0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7` | |
 
@@ -44,8 +44,10 @@ same commit as any deployment. Explorer: prefix addresses/txs with `https://sepo
 
 ## Mainnet
 
-Nothing deployed. STRK20 pool (external): `0x040337b1…e812a` (truncated — obtain full
-address before M7).
+Nothing of ours deployed. STRK20 pool (external):
+`0x040337b1af3c663e86e333bab5a4b28da8d4652a15a69beee2b677776ffe812a`
+(full address recovered 2026-09-05 from AVNU's production frontend bundle; class
+`0x67dddd89d80fedadc06b6f160798f94800a4a70164e5a24301cd0d6076b554d`, also declared on Sepolia).
 
 ## Benchmarks (measured on the deployments above)
 

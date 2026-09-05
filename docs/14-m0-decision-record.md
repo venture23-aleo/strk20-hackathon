@@ -41,6 +41,11 @@ with a free carrier action.**
   tokens, passes the balance check, and provides the `WriteOnce`. The resulting note is
   unspendable and permanently burns one note index per message transaction — acceptable.
   Avoid `CreateOpenNote` (forces a real deposit) and `UseNote` (needs a non-zero note).
+  > **Execution addendum (2026-09-05):** the pool accepts zero, but the shipped SDK's
+  > client-side validation rejects it ("Created note amount must be positive"). The
+  > working carrier through the current SDK is a **1-wei enc-note self-transfer** —
+  > still zero *public* token movement. Proven against the real pool contract in
+  > `apps/cli/test/e2e-pool.test.ts`; upstream a zero-note exemption or track SDK releases.
 - **One invoke-phase action per transaction is Cairo-enforced** (`actions.cairo:302-315`),
   and note creation must precede the invoke (phase ordering). Batching therefore happens
   inside the helper's calldata, exactly as designed — and a message can never share a

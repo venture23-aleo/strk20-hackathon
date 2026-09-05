@@ -69,10 +69,15 @@ export async function poolSend(
   } else {
     const carrierToken = poolCfg.carrierToken;
     if (!carrierToken) throw new Error("config.pool.carrierToken is required for the carrier note");
-    // Replay-protection carrier: zero-amount enc note to self (free, unspendable).
-    builder = builder.with(carrierToken, (t: any) =>
-      t.transfer({ recipient: account.address, amount: 0n })
-    );
+    // Replay-protection carrier. The pool sanctions a zero-amount enc note
+    // (M0/S1), but the shipped SDK rejects zero client-side ("Created note
+    // amount must be positive" — proven in e2e-pool.test.ts), so the working
+    // carrier is a 1-wei enc-note to self: private churn, nothing leaves the
+    // pool. Drop to 0n if a future SDK release lifts the restriction.
+    builder = builder.with(carrierToken, (t: any) => {
+      t.transfer({ recipient: account.address, amount: 1n });
+      t.surplusTo(account.address);
+    });
   }
   builder = builder.invoke(() => ({
     contractAddress: cfg.helperAddress,

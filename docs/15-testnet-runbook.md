@@ -121,24 +121,51 @@ Write the numbers into [14-m0-decision-record.md](14-m0-decision-record.md) § S
 
 ## Phase B — pool mode (the real anonymous path)
 
-### B1 ☐ Obtain the full Sepolia pool address — **the hard blocker**
+### B1 ☑ Obtain the full Sepolia pool address
 
-Our docs carry only the truncated `0x0254a6b2…e0d91`; the full address is not in the
-`starknet-privacy` repo or any public page we could reach. Sources to try: the STRK20
-team / Discord, the strk20.starknet.io docs, or an explorer search once any known pool
-transaction is in hand. Record it here: `pool = 0x____________`
+> **Closed 2026-09-05.** Recovered without any external party:
+> `pool = 0x254a6b2997ef52e9f830ce1f543f6b29768295e8d17e2267d672c552cfe0d91`
+> Method: pulled the full **mainnet** address from AVNU's production frontend bundle,
+> took its class hash, confirmed the pool class is declared on Sepolia, then scanned
+> Sepolia for the pool's `ViewingKeySet` events — one emitter, matching the truncated
+> form. The pool is active. (Sepolia runs an older pool class than mainnet —
+> re-verify SDK compatibility at first contact.)
 
-### B2 ☐ Obtain the proving service URL (Sepolia)
+### B2 ☐ Obtain the proving service URL (Sepolia) — **now the only hard blocker**
 
 Remote proving is mandatory (`ProvingServiceProofProvider`); there is no local prover.
-Note: **a hosted prover sees the witness** — fine for testnet, a real decision for
-production (self-host; see [10-tech-stack.md](10-tech-stack.md)).
+Searched 2026-09-05: no public endpoint exists in the `starknet-privacy` repo, AVNU's
+frontend bundle, or reachable docs — AVNU appears to proxy proving through its own
+backend. Source: the STRK20 team directly. Note: **a hosted prover sees the witness** —
+fine for testnet, a real decision for production.
 
-### B3 ☐ Obtain the discovery indexer URL
+Also blocked behind this: registration itself. The pool is an account contract
+(`__execute__`/`__validate__`) — `SetViewingKey` rides *inside* proven transactions, so
+there is no proof-free on-ramp.
 
-Needed for channel discovery. `ContractDiscoveryProvider` (plain-RPC discovery) is still
-unexported upstream — **re-check the repo before building around this**, it moves fast.
-OHTTP stays on by default in our wiring; leave it that way.
+### B3 ◐ Discovery — self-hostable, no external URL needed
+
+Two findings (2026-09-05): `ContractDiscoveryProvider` (plain-RPC discovery, no indexer)
+**exists in the SDK's testing surface** and is what the harness uses — worth requesting
+as a public export. And the indexer itself is open source and self-hostable
+(`deploy/discovery-service/` in the pool repo, Rust, needs only an RPC URL). Either path
+avoids depending on a hosted indexer. OHTTP stays the default if a hosted one is used.
+
+### B-proof ☑ Pool-mode mechanics proven against the real pool contract
+
+> **2026-09-05** — `apps/cli/test/e2e-pool.test.ts` (gated `RUN_POOL_E2E=1` +
+> `STARKNET_PRIVACY=<built clone>`): our helper deployed with **pool = the real pool
+> contract**; alice registers + shields; the message rides a pool transaction built by
+> the `pool.ts` shapes; the **pool calls `privacy_invoke`** (the helper's
+> `CALLER_NOT_POOL` guard proves the caller); submission via **outside execution** —
+> asserted: the sender's address appears **nowhere in the transaction envelope**, not
+> as `sender_address`, not in calldata; the recipient decrypts normally. Sender
+> anonymity is functional; Sepolia needs only the B2 endpoint swapped in.
+>
+> Execution finding on the carrier: the pool sanctions zero-amount enc notes (M0/S1)
+> but the shipped SDK rejects them client-side ("Created note amount must be
+> positive") — the working carrier is a **1-wei enc-note self-transfer** (private
+> churn, nothing leaves the pool). Pinned in the test; revisit on SDK updates.
 
 ### B4 ☐ Register viewing keys — both parties
 
