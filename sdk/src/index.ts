@@ -22,6 +22,7 @@ export {
 export { seal, open, openCiphertext, CT_LEN, type SealInput, type Sealed } from "./aead.js";
 export { privacyInvokeCalldata, calldataFeltCount, splitBatch } from "./calldata.js";
 export { GROUP_LANE_TAG, groupLaneKey } from "./group.js";
+export { DEV_CHANNEL_TAG, devPairLane } from "./devchannel.js";
 export {
   Outbox,
   MemoryStore,

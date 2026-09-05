@@ -13,6 +13,12 @@ export interface Contact {
   inKey: string;
   /** Unregistered peers cannot receive; compose is disabled until this is true. */
   registered: boolean;
+  /**
+   * Lanes derived from the two addresses (dev mode): the peer pairs by simply
+   * adding YOUR address — but anyone who guesses the pair can derive the keys.
+   * Invite-created contacts carry random keys and stay confidential.
+   */
+  derived?: boolean;
 }
 
 /**

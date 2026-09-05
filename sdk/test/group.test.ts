@@ -15,6 +15,24 @@ const ALICE = 0xa11cen;
 const BOB = 0xb0bn;
 const CAROL = 0xca401n;
 
+describe("devPairLane", () => {
+  it("mirrors: A's out-lane to B is exactly B's in-lane from A", async () => {
+    const { devPairLane } = await import("../src/index.js");
+    const aOut = devPairLane(ALICE, BOB);
+    const bIn = devPairLane(ALICE, BOB); // recomputed independently by B
+    const bOut = devPairLane(BOB, ALICE);
+    expect(aOut).toBe(bIn);
+    expect(aOut).not.toBe(bOut); // directional
+  });
+
+  it("is domain-separated and rejects degenerate pairs", async () => {
+    const { devPairLane, groupLaneKey } = await import("../src/index.js");
+    expect(devPairLane(ALICE, BOB)).not.toBe(groupLaneKey(ALICE, BOB));
+    expect(() => devPairLane(ALICE, ALICE)).toThrow(RangeError);
+    expect(() => devPairLane(0n, BOB)).toThrow(RangeError);
+  });
+});
+
 describe("groupLaneKey", () => {
   it("gives every member a distinct, deterministic lane", () => {
     const lanes = [ALICE, BOB, CAROL].map((m) => groupLaneKey(GK, m));

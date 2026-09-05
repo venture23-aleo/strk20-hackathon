@@ -77,7 +77,17 @@ export function ThreadView({ contact }: { contact: Contact }) {
 
       <div className="bubbles">
         {thread.length === 0 && (
-          <p className="hint center">No messages yet. Write one below — it queues into the outbox.</p>
+          <p className="hint center">
+            {contact.derived ? (
+              <>
+                Address-paired thread: {contact.label} connects by adding <em>your</em> address{" "}
+                <code>{shorten(store.identity)}</code> — no invite needed. (Address-paired lanes
+                are less confidential than invites; anyone who guesses the pair can derive them.)
+              </>
+            ) : (
+              <>No messages yet. Write one below — it queues into the outbox.</>
+            )}
+          </p>
         )}
         {thread.map((m) => (
           <div key={`${m.channelKey}:${m.index}`} className={`bubble ${m.direction}`}>

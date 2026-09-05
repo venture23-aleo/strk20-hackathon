@@ -1,6 +1,7 @@
 import {
   Outbox,
   SyncEngine,
+  devPairLane,
   emptySnapshot,
   seal,
   msgId,
@@ -150,12 +151,18 @@ export class AppStore {
     keys?: { outKey: string; inKey: string }
   ): Promise<Contact> {
     const registered = await this.backend!.isRegistered(peer);
+    // No invite keys? Derive the lanes from the two addresses, so the peer
+    // pairs by simply adding OUR address — devPairLane mirrors by construction.
+    const me = BigInt(this.identity);
+    const them = BigInt(peer);
+    const derived = !keys;
     const contact: Contact = {
       label,
       peer,
-      outKey: keys?.outKey ?? randomFelt(),
-      inKey: keys?.inKey ?? randomFelt(),
+      outKey: keys?.outKey ?? "0x" + devPairLane(me, them).toString(16),
+      inKey: keys?.inKey ?? "0x" + devPairLane(them, me).toString(16),
       registered,
+      ...(derived ? { derived } : {}),
     };
     this.contacts = [...this.contacts.filter((c) => c.label !== label), contact];
     localStorage.setItem(CONTACTS_KEY, JSON.stringify(this.contacts));

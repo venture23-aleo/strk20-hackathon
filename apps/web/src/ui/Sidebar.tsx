@@ -15,6 +15,7 @@ export function Sidebar({
   const [label, setLabel] = useState("");
   const [peer, setPeer] = useState("");
   const [inviteText, setInviteText] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
   const invite = inviteText.trim() ? parseInvite(inviteText) : null;
 
   const reset = () => {
@@ -22,22 +23,32 @@ export function Sidebar({
     setLabel("");
     setPeer("");
     setInviteText("");
+    setAddError(null);
   };
 
   const add = async () => {
     if (!label.trim()) return;
-    const contact = invite
-      ? // Paired contact: the invite carries the mirrored lane keys.
-        await store.addContact(label.trim(), invite.peer, {
-          outKey: invite.yourOutKey,
-          inKey: invite.yourInKey,
-        })
-      : peer.trim()
-        ? await store.addContact(label.trim(), peer.trim())
-        : null;
-    if (!contact) return;
-    reset();
-    onSelect(contact.label);
+    try {
+      if (!invite) {
+        const p = peer.trim();
+        if (!/^0x[0-9a-fA-F]+$/.test(p)) throw new Error("that's not a Starknet address (0x…)");
+        if (BigInt(p) === BigInt(store.identity)) {
+          throw new Error("that's your own address — add the other person's");
+        }
+      }
+      const contact = invite
+        ? // Invite: carries the mirrored lane keys (confidential pairing).
+          await store.addContact(label.trim(), invite.peer, {
+            outKey: invite.yourOutKey,
+            inKey: invite.yourInKey,
+          })
+        : // Address only: lanes derive from the two addresses (dev pairing).
+          await store.addContact(label.trim(), peer.trim());
+      reset();
+      onSelect(contact.label);
+    } catch (e) {
+      setAddError(e instanceof Error ? e.message : String(e));
+    }
   };
 
   return (
@@ -71,12 +82,13 @@ export function Sidebar({
                 : "that doesn't look like an invite"}
             </p>
           )}
+          {addError && <p className="error">{addError}</p>}
           <button className="primary" disabled={!label.trim() || (!invite && !peer.trim())} onClick={() => void add()}>
             {invite ? "Add paired contact" : "Add contact"}
           </button>
           <p className="hint">
-            An invite pairs both clients onto the same encrypted lanes. Without one, a new
-            contact gets fresh lanes — the other side then needs <em>your</em> invite to reply.
+            Adding by address pairs automatically — the other person just adds <em>your</em>{" "}
+            address back. Prefer an invite when the pairing itself should stay confidential.
           </p>
         </div>
       )}
