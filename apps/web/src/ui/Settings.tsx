@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { SEPOLIA_PRESET, isHex, parseCredentialsPaste, probeConnection } from "../lib/presets.js";
+import {
+  SEPOLIA_PRESET,
+  isHex,
+  listSncastAccounts,
+  parseCredentialsPaste,
+  probeConnection,
+  type SncastAccount,
+} from "../lib/presets.js";
 import { store } from "../lib/store.js";
 import { shorten } from "./Onboarding.js";
 
@@ -47,6 +54,8 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
     setProbe(null);
   };
 
+  const [fileAccounts, setFileAccounts] = useState<SncastAccount[]>([]);
+
   const applyPaste = (text: string) => {
     const creds = parseCredentialsPaste(text, account);
     if (!creds) {
@@ -56,9 +65,13 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
     if (creds.accountAddress) setAccount(creds.accountAddress);
     if (creds.privateKey) setKey(creds.privateKey);
     setPasteNote(`✓ imported from ${creds.source}${creds.privateKey ? " (address + key)" : " (address only)"}`);
+    setFileAccounts(listSncastAccounts(text)); // multi-account file → "who are you?" chooser
     setPasteOpen(false);
     setProbe(null);
   };
+
+  const signerAddr = account.trim();
+  const chosenIdentity = identity.trim() || signerAddr;
 
   const runProbe = async () => {
     setProbe("checking");
@@ -190,6 +203,39 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
               </span>
             )}
           </label>
+
+          {fileAccounts.length > 1 && (
+            <div className="field">
+              Who are <strong>you</strong> in this browser?
+              <div className="row" style={{ marginTop: 4 }}>
+                {fileAccounts.map((a) => {
+                  const selected =
+                    isHex(chosenIdentity) && isHex(a.address) && BigInt(chosenIdentity) === BigInt(a.address);
+                  return (
+                    <button
+                      key={a.name}
+                      className={selected ? "primary" : ""}
+                      onClick={() => {
+                        // Identity = the chosen account's ADDRESS. The signer
+                        // (account + key above) stays on the pool account —
+                        // being someone needs their address, not their key.
+                        const isSigner =
+                          isHex(signerAddr) && BigInt(a.address) === BigInt(signerAddr);
+                        setIdentity(isSigner ? "" : a.address);
+                        setProbe(null);
+                      }}
+                    >
+                      {a.name} <code style={{ marginLeft: 4 }}>{shorten(a.address)}</code>
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="hint">
+                This sets your identity from that account's address — the signing key above stays
+                the pool account's. A different private key does NOT change who you are.
+              </span>
+            </div>
+          )}
 
           <label className="field">
             Messaging identity (optional, dev)

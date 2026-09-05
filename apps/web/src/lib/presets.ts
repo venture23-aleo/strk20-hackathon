@@ -28,6 +28,32 @@ export const isHex = (v: string): boolean => /^0x[0-9a-fA-F]+$/.test(v.trim());
  * source names which account was taken, because address/key mismatches fail
  * later as an opaque "invalid signature".
  */
+export interface SncastAccount {
+  name: string;
+  address: string;
+  privateKey: string;
+}
+
+/** All accounts in an sncast file, for the "who are you?" chooser. */
+export function listSncastAccounts(text: string): SncastAccount[] {
+  try {
+    const obj = JSON.parse(text) as Record<string, unknown>;
+    const found: SncastAccount[] = [];
+    for (const network of Object.values(obj)) {
+      if (typeof network !== "object" || network === null) continue;
+      for (const [name, acct] of Object.entries(network as Record<string, unknown>)) {
+        const a = acct as { address?: string; private_key?: string };
+        if (typeof a?.address === "string" && typeof a?.private_key === "string") {
+          found.push({ name, address: a.address, privateKey: a.private_key });
+        }
+      }
+    }
+    return found;
+  } catch {
+    return [];
+  }
+}
+
 export function parseCredentialsPaste(
   text: string,
   preferAddress?: string
