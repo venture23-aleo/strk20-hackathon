@@ -6,6 +6,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "web": "pnpm --filter @strk20-messaging/web dev",
+    "web:devenv": "node scripts/gen-web-env.mjs",
     "web:build": "pnpm --filter @strk20-messaging/web build",
     "web:preview": "pnpm --filter @strk20-messaging/web preview",
     "cli": "node apps/cli/dist/index.js",

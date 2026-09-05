@@ -13,11 +13,19 @@ import { shorten } from "./Onboarding.js";
 /** Mode switcher + direct-mode connection details, with presets and a probe. */
 function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
   const cfg = store.config!;
+  // Dev prefill: `pnpm run web:devenv` writes apps/web/.env.local (git-ignored,
+  // testnet keys only). Fields prefill; nothing connects until Save.
+  const envSigner = {
+    address: (import.meta.env.VITE_DEV_SIGNER_ADDRESS as string | undefined) ?? "",
+    key: (import.meta.env.VITE_DEV_SIGNER_KEY as string | undefined) ?? "",
+  };
   const [mode, setMode] = useState<"demo" | "direct">(cfg.mode);
   const [rpcUrl, setRpcUrl] = useState(cfg.rpcUrl ?? SEPOLIA_PRESET.rpcUrl);
-  const [helper, setHelper] = useState(cfg.helperAddress ?? "");
-  const [account, setAccount] = useState(cfg.mode === "direct" ? cfg.accountAddress : "");
-  const [key, setKey] = useState(cfg.accountKey ?? "");
+  const [helper, setHelper] = useState(cfg.helperAddress ?? (envSigner.address ? SEPOLIA_PRESET.helperAddress : ""));
+  const [account, setAccount] = useState(
+    cfg.mode === "direct" ? cfg.accountAddress : envSigner.address
+  );
+  const [key, setKey] = useState(cfg.accountKey ?? envSigner.key);
   const [identity, setIdentity] = useState(cfg.identityAddress ?? "");
   const [showKey, setShowKey] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -150,6 +158,12 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
               paste credentials…
             </button>
           </div>
+          {envSigner.key && (
+            <p className="hint">
+              dev signer prefilled from <code>.env.local</code>{" "}
+              (<code>{shorten(envSigner.address)}</code>) — pick who you are below and Save.
+            </p>
+          )}
           {pasteOpen && (
             <textarea
               rows={4}
