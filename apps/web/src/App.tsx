@@ -1,6 +1,7 @@
 import { useSyncExternalStore, useState } from "react";
 import { store } from "./lib/store.js";
 import { Chrome } from "./ui/Chrome.js";
+import { GroupView } from "./ui/GroupView.js";
 import { Onboarding } from "./ui/Onboarding.js";
 import { OutboxBar } from "./ui/OutboxBar.js";
 import { Settings } from "./ui/Settings.js";
@@ -14,20 +15,28 @@ export function App() {
 
   if (!store.config?.onboarded) return <Onboarding />;
 
-  const active = store.contacts.find((c) => c.label === activeLabel) ?? store.contacts[0] ?? null;
+  const activeGroup = activeLabel?.startsWith("#")
+    ? store.groupByName(activeLabel.slice(1))
+    : undefined;
+  const activeContact = !activeGroup
+    ? (store.contacts.find((c) => c.label === activeLabel) ?? store.contacts[0] ?? null)
+    : null;
+  const activeId = activeGroup ? `#${activeGroup.name}` : (activeContact?.label ?? null);
 
   return (
     <div className="app">
       <Chrome onSettings={() => setShowSettings(true)} />
       <div className="body">
-        <Sidebar active={active?.label ?? null} onSelect={setActiveLabel} />
+        <Sidebar active={activeId} onSelect={setActiveLabel} />
         <main className="thread-pane">
-          {active ? (
-            <ThreadView contact={active} />
+          {activeGroup ? (
+            <GroupView group={activeGroup} />
+          ) : activeContact ? (
+            <ThreadView contact={activeContact} />
           ) : (
             <div className="empty-state">
               <h2>No conversations yet</h2>
-              <p>Add a contact to start a thread. Messages are end-to-end encrypted and permanent.</p>
+              <p>Add a contact or create a group. Messages are end-to-end encrypted and permanent.</p>
             </div>
           )}
         </main>

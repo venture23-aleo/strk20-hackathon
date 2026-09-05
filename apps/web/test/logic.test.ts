@@ -125,6 +125,56 @@ describe("invite — pairing two clients onto the same lanes", () => {
   });
 });
 
+describe("groups — lanes, invites, stitching", () => {
+  const GK = "0x5a0aa03c5d8649895810c86ed63b62d91895734e6d3ab2e80ada6f6fb400c84";
+  const group = {
+    name: "escrow-deal",
+    groupKey: GK,
+    members: [
+      { address: "0xa11ce", label: "you" },
+      { address: "0xb0b", label: "Bob" },
+      { address: "0xca401" },
+    ],
+  };
+
+  it("group invite round-trips and validates", async () => {
+    const { makeGroupInvite, parseGroupInvite } = await import("../src/lib/groups.js");
+    const inv = parseGroupInvite(JSON.stringify(makeGroupInvite(group)))!;
+    expect(inv.name).toBe("escrow-deal");
+    expect(inv.members.length).toBe(3);
+    expect(parseGroupInvite("junk")).toBeNull();
+    expect(parseGroupInvite(JSON.stringify({ "strk20msg-group-invite": 1, name: "x", groupKey: "nope", members: [] }))).toBeNull();
+  });
+
+  it("stitches all members' lanes with attribution; my lane reads as sent", async () => {
+    const { groupLanes, myLane, stitchGroupThread } = await import("../src/lib/groups.js");
+    const lanes = groupLanes(group, "0xa11ce");
+    expect(lanes.length).toBe(3); // me already listed — not duplicated
+    const laneOf = (addr: string) => lanes.find((l) => BigInt(l.member.address) === BigInt(addr))!.laneKey;
+    expect(myLane(group, "0xa11ce")).toBe(laneOf("0xa11ce"));
+
+    const history = [
+      rec(laneOf("0xa11ce"), 0, 100, "terms attached"),
+      rec(laneOf("0xb0b"), 0, 150, "reviewing"),
+      rec(laneOf("0xca401"), 0, 200, "lgtm"),
+      rec(laneOf("0xa11ce"), 1, 250, "executing"),
+      rec("0xdead", 0, 120, "noise from another channel"),
+    ];
+    const thread = stitchGroupThread(history, group, "0xa11ce");
+    expect(thread.map((m) => m.body)).toEqual(["terms attached", "reviewing", "lgtm", "executing"]);
+    expect(thread.map((m) => m.direction)).toEqual(["sent", "received", "received", "sent"]);
+    expect(thread[1]!.senderLabel).toBe("Bob");
+    expect(thread[2]!.senderLabel).toMatch(/^0xca401$|…/); // unlabeled member falls back to address
+  });
+
+  it("a joiner not in the member list still gets a lane of their own", async () => {
+    const { groupLanes } = await import("../src/lib/groups.js");
+    const lanes = groupLanes(group, "0xd0e");
+    expect(lanes.length).toBe(4);
+    expect(lanes.some((l) => l.member.label === "you")).toBe(true);
+  });
+});
+
 describe("backup — key export and restore", () => {
   it("round-trips key, address and contacts", () => {
     const json = exportBackup({

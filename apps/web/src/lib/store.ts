@@ -14,6 +14,7 @@ import {
 import { DemoBackend, DirectBackend, type Backend } from "./backend.js";
 import { exportBackup, parseBackup } from "./backup.js";
 import type { Contact } from "./contacts.js";
+import { groupLanes, myLane, type Group, type GroupInvite, type GroupMember } from "./groups.js";
 
 export interface AppConfig {
   onboarded: boolean;
@@ -25,6 +26,13 @@ export interface AppConfig {
   rpcUrl?: string;
   helperAddress?: string;
   accountKey?: string;
+  /**
+   * Dev-mode only: messaging identity, when it differs from the signing
+   * account — lets several browsers share one funded signer while remaining
+   * distinct members of groups and threads. In pool mode identity IS the
+   * account and this stays unset.
+   */
+  identityAddress?: string;
 }
 
 export interface FlushProgress {
@@ -37,6 +45,7 @@ export interface FlushProgress {
 
 const CONFIG_KEY = "strk20msg.config";
 const CONTACTS_KEY = "strk20msg.contacts";
+const GROUPS_KEY = "strk20msg.groups";
 const OUTBOX_KEY = "strk20msg.outbox";
 const SYNC_KEY = "strk20msg.sync";
 
@@ -79,6 +88,7 @@ export class AppStore {
 
   config: AppConfig | null;
   contacts: Contact[];
+  groups: Group[];
   outbox: Outbox;
   flush: FlushProgress = { phase: "idle" };
   syncing = false;
@@ -89,6 +99,7 @@ export class AppStore {
   constructor() {
     this.config = readJson<AppConfig>(CONFIG_KEY);
     this.contacts = readJson<Contact[]>(CONTACTS_KEY) ?? [];
+    this.groups = readJson<Group[]>(GROUPS_KEY) ?? [];
     this.outbox = new Outbox(new LsOutboxStore());
     if (this.config?.onboarded) this.connect();
   }
@@ -166,10 +177,57 @@ export class AppStore {
     void this.refreshRegistration(contact);
   }
 
+  /** Messaging identity: who I am in threads and groups (see identityAddress). */
+  get identity(): string {
+    return this.config?.identityAddress || this.config!.accountAddress;
+  }
+
+  // -- groups ---------------------------------------------------------------
+  createGroup(name: string, members: GroupMember[]): Group {
+    const group: Group = {
+      name,
+      groupKey: randomFelt(),
+      // No viewer-relative labels in the stored/shared member list — "you" is
+      // computed per viewer at stitch time.
+      members: [{ address: this.identity }, ...members.filter((m) => m.address)],
+    };
+    this.groups = [...this.groups.filter((g) => g.name !== name), group];
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(this.groups));
+    this.notify();
+    return group;
+  }
+
+  joinGroup(invite: GroupInvite): Group {
+    const group: Group = { name: invite.name, groupKey: invite.groupKey, members: invite.members };
+    this.groups = [...this.groups.filter((g) => g.name !== group.name), group];
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(this.groups));
+    this.notify();
+    return group;
+  }
+
+  groupByName(name: string): Group | undefined {
+    return this.groups.find((g) => g.name === name);
+  }
+
+  queueToGroup(group: Group, text: string): void {
+    this.outbox.queue(`#${group.name}`, text);
+    this.notify();
+  }
+
   // -- outbox ---------------------------------------------------------------
   queue(contact: Contact, text: string): void {
     this.outbox.queue(contact.label, text);
     this.notify();
+  }
+
+  /** Resolve an outbox destination to the lane it writes on. */
+  private laneFor(to: string): { laneHex: string; display: string } | null {
+    if (to.startsWith("#")) {
+      const group = this.groupByName(to.slice(1));
+      return group ? { laneHex: myLane(group, this.identity), display: to } : null;
+    }
+    const contact = this.contacts.find((c) => c.label === to);
+    return contact ? { laneHex: contact.outKey, display: contact.label } : null;
   }
 
   queuedTiers(): number[] {
@@ -183,15 +241,17 @@ export class AppStore {
     const cfg = this.config!;
 
     try {
-      const byContact = new Map<Contact, OutboxEntry[]>();
+      const byLane = new Map<string, { display: string; entries: OutboxEntry[] }>();
       for (const e of queued) {
-        const c = this.contacts.find((x) => x.label === e.to);
-        if (!c) continue;
-        byContact.set(c, [...(byContact.get(c) ?? []), e]);
+        const dest = this.laneFor(e.to);
+        if (!dest) continue;
+        const bucket = byLane.get(dest.laneHex) ?? { display: dest.display, entries: [] };
+        bucket.entries.push(e);
+        byLane.set(dest.laneHex, bucket);
       }
 
-      for (const [contact, entries] of byContact) {
-        const outKey = BigInt(contact.outKey);
+      for (const [laneHex, { display, entries }] of byLane) {
+        const outKey = BigInt(laneHex);
         let index = 0;
         for (;;) {
           const lens = await this.backend!.reader.slotLens(
@@ -212,7 +272,7 @@ export class AppStore {
             sealed: seal({
               channelKey: outKey,
               index: index + k,
-              sender: BigInt(cfg.accountAddress),
+              sender: BigInt(this.identity),
               timestamp: BigInt(Math.floor(Date.now() / 1000)),
               body: new TextEncoder().encode(entry.body),
             }),
@@ -245,7 +305,9 @@ export class AppStore {
         this.notify();
 
         await this.syncNow();
-        this.backend!.demo?.scheduleReply(contact, () => void this.syncNow());
+        // Demo counterparty replies only in one-to-one threads.
+        const contact = this.contacts.find((c) => c.label === display);
+        if (contact) this.backend!.demo?.scheduleReply(contact, () => void this.syncNow());
       }
     } catch (err) {
       this.flush = { phase: "failed", error: err instanceof Error ? err.message : String(err) };
@@ -259,7 +321,11 @@ export class AppStore {
     this.syncing = true;
     this.notify();
     try {
-      const keys = this.contacts.flatMap((c) => [c.outKey, c.inKey]);
+      const me = this.identity;
+      const keys = [
+        ...this.contacts.flatMap((c) => [c.outKey, c.inKey]),
+        ...this.groups.flatMap((g) => groupLanes(g, me).map((l) => l.laneKey)),
+      ];
       await this.engine.sync(keys);
     } finally {
       this.syncing = false;

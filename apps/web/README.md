@@ -40,6 +40,22 @@ pnpm --filter @strk20-messaging/web test
   (M5), which the tests prove.
 - **No delete affordance anywhere** — by construction; the permanence disclosure says why.
 
+## Groups
+
+A group is one shared **group key**; every member writes on their own lane
+(`laneKey = Poseidon(STRK20_GROUP_LANE:V1, groupKey, memberAddress)` — sdk `groupLaneKey`)
+and reads everyone's, so concurrent senders never race for slots and seal/open/sync/the
+helper are unchanged. Create under **+ group** (members one per line), share with
+**copy group invite**, join by pasting it. Verified live on Sepolia: two browsers plus a
+scripted third member in one thread, each message attributed to its lane's owner.
+
+Honest edges, by construction: a joiner sees the **full history** (lanes walk from index 0,
+storage is permanent); sender attribution is **cooperative** — every member can compute every
+lane key, the same shared-secret trust model as pairwise; removing a member means a new group.
+Direct-mode extra: the optional **messaging identity** field in Settings lets several browsers
+share the one funded signer while staying distinct members (pool mode ignores it — there,
+identity is the account).
+
 ## Verified by driving it
 
 A Playwright script walked the whole flow headlessly (onboarding gate, contact add,

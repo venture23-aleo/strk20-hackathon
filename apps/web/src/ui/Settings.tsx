@@ -10,6 +10,7 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
   const [helper, setHelper] = useState(cfg.helperAddress ?? "");
   const [account, setAccount] = useState(cfg.mode === "direct" ? cfg.accountAddress : "");
   const [key, setKey] = useState(cfg.accountKey ?? "");
+  const [identity, setIdentity] = useState(cfg.identityAddress ?? "");
   const [showKey, setShowKey] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteNote, setPasteNote] = useState<string | null>(null);
@@ -59,6 +60,7 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
         helperAddress: helper.trim(),
         accountAddress: account.trim(),
         accountKey: key.trim(),
+        identityAddress: identity.trim() || undefined,
       });
     }
     setSaved(true);
@@ -143,6 +145,20 @@ function ConnectionEditor({ onSaved }: { onSaved: () => void }) {
               <button className="ghost" onClick={() => setShowKey(!showKey)}>
                 {showKey ? "hide" : "show"}
               </button>
+            </span>
+          </label>
+
+          <label className="field">
+            Messaging identity (optional, dev)
+            <input
+              className="mono"
+              placeholder="0x… — leave empty to use the account address"
+              value={identity}
+              onChange={(e) => setIdentity(e.target.value)}
+            />
+            <span className="hint">
+              Lets several browsers share one funded signer while staying distinct people in
+              threads and groups. Pool mode ignores this.
             </span>
           </label>
 

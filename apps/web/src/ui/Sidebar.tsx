@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { parseInvite } from "../lib/contacts.js";
+import { parseGroupInvite } from "../lib/groups.js";
 import { store } from "../lib/store.js";
 import { shorten } from "./Onboarding.js";
 
@@ -93,6 +94,110 @@ export function Sidebar({
           </li>
         ))}
       </ul>
+      <GroupsSection active={active} onSelect={onSelect} />
     </aside>
+  );
+}
+
+function GroupsSection({
+  active,
+  onSelect,
+}: {
+  active: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [membersText, setMembersText] = useState("");
+  const [inviteText, setInviteText] = useState("");
+  const invite = inviteText.trim() ? parseGroupInvite(inviteText) : null;
+
+  const reset = () => {
+    setAdding(false);
+    setName("");
+    setMembersText("");
+    setInviteText("");
+  };
+
+  const create = () => {
+    if (invite) {
+      const g = store.joinGroup(invite);
+      reset();
+      onSelect(`#${g.name}`);
+      return;
+    }
+    if (!name.trim()) return;
+    const members = membersText
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter((s) => /^0x[0-9a-fA-F]+$/.test(s))
+      .map((address) => ({ address }));
+    const g = store.createGroup(name.trim().replace(/^#/, ""), members);
+    reset();
+    onSelect(`#${g.name}`);
+  };
+
+  return (
+    <>
+      <div className="sidebar-head">
+        <span>Groups</span>
+        <button className="ghost" onClick={() => (adding ? reset() : setAdding(true))}>
+          {adding ? "cancel" : "+ group"}
+        </button>
+      </div>
+      {adding && (
+        <div className="add-contact">
+          {!invite && (
+            <>
+              <input placeholder="Group name" value={name} onChange={(e) => setName(e.target.value)} />
+              <textarea
+                rows={3}
+                placeholder="Member addresses, one per line (you are included automatically)"
+                value={membersText}
+                onChange={(e) => setMembersText(e.target.value)}
+              />
+            </>
+          )}
+          <textarea
+            rows={3}
+            placeholder="…or paste a group invite (joining reveals the group's full history)"
+            value={inviteText}
+            onChange={(e) => setInviteText(e.target.value)}
+          />
+          {inviteText.trim() !== "" && (
+            <p className={invite ? "hint invite-ok" : "error"}>
+              {invite
+                ? `✓ invite to #${invite.name} · ${invite.members.length} members`
+                : "that doesn't look like a group invite"}
+            </p>
+          )}
+          <button
+            className="primary"
+            disabled={!invite && !name.trim()}
+            onClick={create}
+          >
+            {invite ? `Join #${invite.name}` : "Create group"}
+          </button>
+        </div>
+      )}
+      <ul className="contact-list">
+        {store.groups.map((g) => (
+          <li key={g.name}>
+            <button
+              className={`contact ${`#${g.name}` === active ? "active" : ""}`}
+              onClick={() => onSelect(`#${g.name}`)}
+            >
+              <span className="contact-name">#{g.name}</span>
+              <span className="contact-addr">{g.members.length} members</span>
+            </button>
+          </li>
+        ))}
+        {store.groups.length === 0 && !adding && (
+          <li className="hint" style={{ padding: "4px 14px 10px" }}>
+            (no groups)
+          </li>
+        )}
+      </ul>
+    </>
   );
 }
