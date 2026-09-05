@@ -7,6 +7,33 @@ import { shorten } from "./Onboarding.js";
  * as "no new messages", which is the worst failure mode for a messenger — so
  * the block watermark lives in the header, not in a settings pane.
  */
+/**
+ * Your address, one click to copy — it's what other people enter under
+ * "+ add" to reach you, so it should never require digging through files.
+ */
+function IdentityChip() {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      className="id-chip"
+      title={`your messaging identity — click to copy:\n${store.identity}${
+        store.config?.identityAddress ? `\nsigner: ${store.config.accountAddress}` : "\n(also the signer)"
+      }`}
+      onClick={() => {
+        void navigator.clipboard.writeText(store.identity);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+    >
+      {copied ? "address copied ✓" : (
+        <>
+          you: <code>{shorten(store.identity)}</code> ⧉
+        </>
+      )}
+    </button>
+  );
+}
+
 export function Chrome({ onSettings }: { onSettings: () => void }) {
   const [, tick] = useState(0);
   useEffect(() => {
@@ -27,14 +54,7 @@ export function Chrome({ onSettings }: { onSettings: () => void }) {
   return (
     <header className="chrome">
       <div className="brand">STRK20 Messages</div>
-      <span
-        className="id-chip"
-        title={`your messaging identity: ${store.identity}${
-          store.config?.identityAddress ? ` · signer: ${store.config.accountAddress}` : " (also the signer)"
-        }`}
-      >
-        you: <code>{shorten(store.identity)}</code>
-      </span>
+      <IdentityChip />
       <button
         className={`sync ${store.syncing ? "busy" : ""}`}
         onClick={() => void store.syncNow()}
